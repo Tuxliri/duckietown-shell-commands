@@ -7,6 +7,7 @@ from utils.duckietown_viewer_utils import \
 LAUNCHER_NAME = "led_controller"
 ICON_ASSET = "icon-led-control.png"
 
+
 class DTCommand(DTCommandAbs):
     help = "Runs the LED controller"
 
@@ -21,9 +22,9 @@ class DTCommand(DTCommandAbs):
         # launch viewer
         launch_viewer(
             parsed.robot,
-            "led_controller",
+            LAUNCHER_NAME,
             verbose=parsed.vv,
             window_args={
                 "icon": get_asset_icon_path(ICON_ASSET)
-            },
+            }
         )

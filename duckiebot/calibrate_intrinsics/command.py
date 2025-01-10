@@ -22,11 +22,9 @@ class DTCommand(DTCommandAbs):
         # launch viewer
         launch_viewer(
             parsed.robot,
-            "intrinsics_calibrator",
+            LAUNCHER_NAME,
             verbose=parsed.vv,
             window_args={
-                "icon": get_asset_icon_path(ICON_ASSET),
-                "width": 1120,
-                "height": 960,
-            },
+                "icon": get_asset_icon_path(ICON_ASSET)
+            }
         )
