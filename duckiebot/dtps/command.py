@@ -8,7 +8,7 @@ ICON_ASSET = "icon.png"
 
 
 class DTCommand(DTCommandAbs):
-    help = "Opens the DT Postal Service (DTPS) for a DT robot"
+    help = "Opens the DT Postal Service (DTPS) topic list for a DT robot"
 
     @staticmethod
     def command(shell: DTShell, args, **kwargs):
