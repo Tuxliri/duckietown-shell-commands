@@ -3,13 +3,12 @@ from utils.assets_utils import get_asset_icon_path
 from utils.duckietown_viewer_utils import \
     ensure_duckietown_viewer_installed, launch_viewer
 
-# NOTE: this must match the name of the launcher in the dt-duckietown-viewer project
-LAUNCHER_NAME = "extrinsics_calibrator"
-ICON_ASSET = "icon-calibrate-extrinsics.png"
+LAUNCHER_NAME = "hub"
+ICON_ASSET = "icon.png"
 
 
 class DTCommand(DTCommandAbs):
-    help = "Runs the extrinsics calibrator"
+    help = "Opens the DT Hub"
 
     @staticmethod
     def command(shell: DTShell, args, **kwargs):
@@ -22,11 +21,13 @@ class DTCommand(DTCommandAbs):
         # launch viewer
         launch_viewer(
             LAUNCHER_NAME,
-            robot=parsed.robot,
             verbose=parsed.vv,
+            fullscreen=True,
+            menu=True,
             window_args={
                 "icon": get_asset_icon_path(ICON_ASSET),
-                "min-width": 700,
-                "min-height": 600
+                "url": "https://hub.duckietown.com/",
+                "min-width": 694,
+                "min-height": 634
             }
         )
