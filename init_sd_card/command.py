@@ -816,7 +816,11 @@ def _get_netplan_wifi_configuration(parsed) -> str:
     wifis = []
 
     for connection in networks:
-        # EAP-secured network
+        if connection.ssid == "duckietown" and connection.psk == "quackquack":
+            # Replace the duckietown:quackquack network with a placeholder. This network is already included
+            # in the base disk image and should not be added again to avoid a duplicate in the netplan configuration file.
+            connection = _interpret_wifi_string("mywifi:mypassword")[0]
+
         if connection.username is not None:
             wifi = NETPLAN_WPA_EAP_NETWORK_CONFIG.format(
                 ssid=connection.ssid,
