@@ -25,12 +25,6 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
         """
         parser = argparse.ArgumentParser("dts duckiebot dtps")
         parser.add_argument(
-            "-vv",
-            default=False,
-            action="store_true",
-            help="Run in verbose mode"
-        )
-        parser.add_argument(
             "robot",
             help="Name of the robot to connect to"
         )

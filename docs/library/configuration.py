@@ -25,12 +25,6 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
         """
         parser = argparse.ArgumentParser("dts docs library")
         parser.add_argument(
-            "-vv",
-            default=False,
-            action="store_true",
-            help="Run in verbose mode"
-        )
-        parser.add_argument(
             "--daffy",
             default=False,
             action="store_true",

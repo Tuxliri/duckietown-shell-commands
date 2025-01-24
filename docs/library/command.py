@@ -1,10 +1,5 @@
+import webbrowser
 from dt_shell import DTCommandAbs, DTShell
-from utils.assets_utils import get_asset_icon_path
-from utils.duckietown_viewer_utils import \
-    ensure_duckietown_viewer_installed, launch_viewer
-
-LAUNCHER_NAME = "library"
-ICON_ASSET = "icon.png"
 
 
 class DTCommand(DTCommandAbs):
@@ -19,19 +14,4 @@ class DTCommand(DTCommandAbs):
             version = "daffy"
         else:
             version = "ente"
-        # ---
-        # make sure the app is installed
-        ensure_duckietown_viewer_installed()
-        # launch viewer
-        launch_viewer(
-            LAUNCHER_NAME,
-            verbose=parsed.vv,
-            fullscreen=True,
-            menu=True,
-            window_args={
-                "icon": get_asset_icon_path(ICON_ASSET),
-                "url": f"https://docs.duckietown.com/{version}/",
-                "min-width": 694,
-                "min-height": 634
-            }
-        )
+        webbrowser.open(f"https://docs.duckietown.com/{version}/")

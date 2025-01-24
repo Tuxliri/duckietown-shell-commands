@@ -24,10 +24,4 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
         The parser this command will use.
         """
         parser = argparse.ArgumentParser("dts hub")
-        parser.add_argument(
-            "-vv",
-            default=False,
-            action="store_true",
-            help="Run in verbose mode"
-        )
         return parser
