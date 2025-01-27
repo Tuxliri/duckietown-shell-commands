@@ -21,11 +21,14 @@ class DTCommand(DTCommandAbs):
         ensure_duckietown_viewer_installed()
         # launch viewer
         launch_viewer(
-            parsed.robot,
             LAUNCHER_NAME,
+            robot=parsed.robot,
             verbose=parsed.vv,
             window_args={
                 "icon": get_asset_icon_path(ICON_ASSET),
-                "width": 702
+                "width": 694,
+                "height": 634,
+                "min-width": 694,
+                "min-height": 634
             }
         )

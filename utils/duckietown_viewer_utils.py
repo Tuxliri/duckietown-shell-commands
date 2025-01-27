@@ -136,15 +136,17 @@ def ensure_duckietown_viewer_installed(log_prefix: str = None):
 
     # make sure the app is not already installed
     installed_version: Optional[str] = get_most_recent_version_installed()
-    if installed_version is not None:
-        return
-
     # get latest version available on the DCSS
     latest: Optional[str] = get_latest_version()
     if latest is None:
         dtslogger.error(f"{log_prefix}No version available for installation.")
         return
-
+    # compare installed and latest versions
+    if installed_version:
+        if installed_version == latest:
+            return
+        os.remove(get_path_to_binary(installed_version))
+        os.rmdir(get_path_to_install(installed_version))
     # download new version
     app_dir = os.path.join(APP_RELEASES_DIR, f"v{latest}")
 
@@ -174,10 +176,10 @@ def ensure_duckietown_viewer_installed(log_prefix: str = None):
     dtslogger.info(f"{log_prefix}Installation completed successfully!")
 
 
-def launch_viewer(robot: str, app: str, *, verbose: bool = False, window_args: Optional[WindowArgs] = None) \
+def launch_viewer(app: str, *, robot: Optional[str] = None, verbose: bool = False, fullscreen: bool = False, menu: bool = False, window_args: Optional[WindowArgs] = None) \
         -> 'DuckietownViewerInstance':
     viewer = DuckietownViewerInstance(verbose=verbose)
-    viewer.start(robot, app, window_args=window_args)
+    viewer.start(app, robot, fullscreen, menu, window_args=window_args)
     return viewer
 
 
@@ -189,7 +191,8 @@ class DuckietownViewerInstance:
         "keyboard_controller",
         "intrinsics_calibrator",
         "extrinsics_calibrator",
-        "led_controller"
+        "led_controller",
+        "dashboard"
     ]
 
     def __init__(self, verbose: bool = False):
@@ -199,14 +202,15 @@ class DuckietownViewerInstance:
         self._frontend: Optional[subprocess.Popen] = None
         self._backend_ip: Optional[str] = None
 
-    def start(self, robot: str, app: str, window_args: Optional[WindowArgs] = None):
-        self._start_backend(robot, app)
-        self._wait_backend_ready()
-        self._start_frontend(window_args or {})
+    def start(self, app: str, robot: Optional[str], fullscreen: Optional[bool], menu: Optional[bool], window_args: Optional[WindowArgs] = None):
+        if "url" not in window_args.keys():
+            self._start_backend(app, robot)
+            self._wait_backend_ready()
+        self._start_frontend(fullscreen, menu, window_args or {})
         self._join_frontend()
         self._stop()
 
-    def _start_backend(self, robot: str, app: str):
+    def _start_backend(self, app: str, robot: str):
         import dt_shell
         # make sure the app is known
         if app not in self._KNOWN_APPS:
@@ -310,13 +314,20 @@ class DuckietownViewerInstance:
             # retry
             time.sleep(0.5)
 
-    def _start_frontend(self, args: WindowArgs):
-        if self._backend_ip is None:
-            raise ValueError("Backend not ready. This should not have happened.")
+    def _start_frontend(self, fullscreen: Optional[bool], menu: Optional[bool], args: WindowArgs):
+        if "url" in args.keys():
+            app_config = []
+        else:
+            if self._backend_ip is None:
+                raise ValueError("Backend not ready. This should not have happened.")
+            app_config = [
+                "--url", f"http://{self._backend_ip}:{self._BACKEND_REMOTE_PORT}/app/",
+            ]
+        if fullscreen:
+            app_config.append("--fullscreen")
+        if menu:
+            app_config.append("--menu")
         app_bin = get_path_to_binary(get_most_recent_version_installed())
-        app_config = [
-            "--url", f"http://{self._backend_ip}:{self._BACKEND_REMOTE_PORT}/app/",
-        ]
         # add extra arguments
         for k, v in args.items():
             app_config.extend([f"--{k}", str(v)])
