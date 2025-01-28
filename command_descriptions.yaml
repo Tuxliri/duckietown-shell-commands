@@ -342,6 +342,10 @@ social:
       description: Open the DT LinkedIn page
     x:
       description: Open the DT X page
+    slack:
+      description: Open the DT Slack page
+    stack_overflow:
+      description: Open the DT Stack Overflow page
 stack:
   description: Stack commands
   subcommands:
