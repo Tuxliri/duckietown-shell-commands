@@ -240,6 +240,8 @@ fleet:
   subcommands:
     discover:
       description: Discover the DT fleet on the local network
+github:
+  description: Open the DT GitHub page
 gui: &gui
   description: Start DT GUI tools
 start_gui_tools: *gui
