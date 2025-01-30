@@ -93,6 +93,7 @@ class DTCommand(DTCommandAbs):
             "detach": True,
             "remove": True,
             "cgroupns": "private",
+            "publish": [['14550','14550','udp']], # Expose port for Ardupilot SITL
             "volumes": [
                 (os.path.join(vbot_root_dir, "var", "lib", "docker"), "/var/lib/docker", "rw"),
                 *volumes
