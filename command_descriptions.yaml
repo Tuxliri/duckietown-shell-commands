@@ -140,6 +140,8 @@ docs:
       subcommands:
         build:
           description: Build the documentation environment for the current DT project
+    library:
+      description: Open the DT Documentation Library
     publish:
       description: Publish the documentation for the current DT project
 duckiebot:
@@ -164,6 +166,8 @@ duckiebot:
     intrinsics_calibrator: *duckiebot_calibrate_intrinsics
     clean:
       description: Clean a DT robot
+    dashboard:
+      description: Open the dashboard for a DT robot
     demo:
       description: Run a demo on a DT robot
     evaluate:
@@ -217,8 +221,12 @@ fleet:
   subcommands:
     discover:
       description: Discover the DT fleet on the local network
+github:
+  description: Open the DT GitHub page
 hatchery:
   description: Start DT hatchery
+hub:
+  description: Open the DT Hub
 init_sd_card:
   description: Initialize an SD card
 install:
@@ -314,3 +322,5 @@ vscode:
       description: Open the current project
     run:
       description: Run an instance of VS Code
+website:
+  description: Open the DT website
