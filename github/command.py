@@ -1,0 +1,10 @@
+import webbrowser
+from dt_shell import DTCommandAbs, DTShell
+
+
+class DTCommand(DTCommandAbs):
+    help = "Opens the DT GitHub page"
+
+    @staticmethod
+    def command(shell: DTShell, args, **kwargs):
+        webbrowser.open("https://www.github.com/duckietown/")
