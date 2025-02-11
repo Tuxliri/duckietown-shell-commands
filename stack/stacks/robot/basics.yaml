@@ -38,8 +38,8 @@ services:
       DT_LAUNCHER: duckiematrix-interface
     volumes:
       - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
+      # FIXME: DTSW-6552 this prevents the node from connecting to the Duckiematrix topic
+      # - /data/ramdisk/dtps:/dtps
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
