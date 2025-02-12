@@ -34,6 +34,8 @@ services:
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
       # nvargus socket
       - /tmp:/tmp
+      # camera socket
+      - /run/udev:/run/udev
 
   driver-tof:
     image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
