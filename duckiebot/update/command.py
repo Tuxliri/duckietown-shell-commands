@@ -127,7 +127,7 @@ class DTCommand(DTCommandAbs):
                     for project, stack in stacks.items():
                         success = shell.include.stack.down.command(
                             shell,
-                            ["--machine", robot, "--project", project, stack],
+                            ["--machine", robot, "--project", project, stack.strip()],
                         )
                         if not success:
                             return
@@ -164,7 +164,7 @@ class DTCommand(DTCommandAbs):
         # call `stack up` command for all stacks to update
         for project, stack in stacks.items():
             dtslogger.info(f"Updating stack `{stack}`...")
-            success = shell.include.stack.up.command(shell, stack_up_options + ["--project", project, stack])
+            success = shell.include.stack.up.command(shell, stack_up_options + ["--project", project, stack.strip()])
             if not success:
                 return
 
