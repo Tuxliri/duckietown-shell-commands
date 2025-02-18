@@ -27,6 +27,7 @@ services:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
+      - /data/config:/data/config
 
   imu:
     image: ${REGISTRY}/duckietown/dt-ros-interface:ente-${ARCH}
