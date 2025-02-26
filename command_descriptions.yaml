@@ -84,11 +84,6 @@ devel:
           description: Build the documentation for the current DT project
     info:
       description: Get information about the current DT project
-    jupyter:
-      description: Jupyter commands
-      subcommands:
-        lab:
-          description: Open the current DT project in JupyterLab
     pip:
       description: pip commands
       subcommands:
@@ -98,10 +93,6 @@ devel:
       description: Pull the images relative to the current DT project
     push:
       description: Push the images relative to the current DT project
-    release:
-      description: DT project release commands
-      subcommands:
-        description: Ensure that a DT project can be sent to production
     run:
       description: Run the current DT project
     sync:
@@ -174,9 +165,6 @@ duckiebot:
       description: Evaluate the current submission on a DT robot
     hut_upgrade:
       description: Upgrade the firmware for a DT robot HUT
-    image_viewer: &duckiebot_image_viewer
-      description: Run the image viewer for a DT robot
-    image_view: *duckiebot_image_viewer
     keyboard_control: &duckiebot_keyboard_control
       description: Run the keyboard controller for a DT robot
     jc: *duckiebot_keyboard_control
@@ -330,8 +318,6 @@ version:
 vscode:
   description: VS Code commands
   subcommands:
-    open:
-      description: Open the current project
     run:
       description: Run an instance of VS Code
 website:
