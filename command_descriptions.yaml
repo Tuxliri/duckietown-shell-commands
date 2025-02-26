@@ -104,7 +104,8 @@ devel:
     release:
       description: DT project release commands
       subcommands:
-        description: Ensure that a DT project can be sent to production
+        check:
+          description: Ensure that a DT project can be sent to production
     run:
       description: Run the current DT project
     sync:
@@ -292,7 +293,8 @@ matrix:
     devel:
       description: DM development commands
       subcommands:
-        description: Create a new release of the DM and push it to the DCSS
+        release:
+          description: Create a new release of the DM and push it to the DCSS
     engine:
       description: DM engine commands
       subcommands:
