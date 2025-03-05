@@ -26,7 +26,7 @@ class DTCommand(DTCommandAbs):
             verbose=parsed.vv,
             window_args={
                 "icon": get_asset_icon_path(ICON_ASSET),
-                "min-width": 700,
+                "min-width": 725,
                 "min-height": 600
             }
         )
