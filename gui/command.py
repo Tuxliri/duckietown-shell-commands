@@ -55,7 +55,7 @@ class DTCommand(DTCommandAbs):
         if parsed.image is None:
             registry: str = get_registry_to_use()
             # TODO: remove hardcoded distro, though VNC does not work on ente
-            distro: str = "daffy"
+            distro: str = "ente"
             image = DEFAULT_IMAGE_FMT.format(registry, distro, arch)
         else:
             image = parsed.image
