@@ -15,7 +15,8 @@ from utils.docker_utils import (
     pull_if_not_exist,
     pull_image_OLD,
     remove_if_running,
-    get_registry_to_use, get_client_OLD,
+    get_registry_to_use,
+    get_client_OLD,
 )
 
 from utils.git_utils import get_last_commit
@@ -55,7 +56,7 @@ class DTCommand(DTCommandAbs):
         if parsed.image is None:
             registry: str = get_registry_to_use()
             # TODO: remove hardcoded distro, though VNC does not work on ente
-            distro: str = "ente"
+            distro: str = "daffy"
             image = DEFAULT_IMAGE_FMT.format(registry, distro, arch)
         else:
             image = parsed.image
