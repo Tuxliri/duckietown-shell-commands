@@ -70,7 +70,7 @@ desktop:
           description: DTV development commands
           subcommands:
             release:
-              subcommands: Create a new release of the DTV and push it to the DCSS
+              description: Create a new release of the DTV and push it to the DCSS
         install:
           description: Install a DTV application
         update:
