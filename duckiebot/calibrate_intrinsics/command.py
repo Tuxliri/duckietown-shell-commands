@@ -23,10 +23,12 @@ class DTCommand(DTCommandAbs):
         launch_viewer(
             LAUNCHER_NAME,
             robot=parsed.robot,
-            verbose=parsed.vv,
+            verbose=parsed.verbose,
+            fullscreen=parsed.fullscreen,
+            on_top=parsed.on_top,
             window_args={
                 "icon": get_asset_icon_path(ICON_ASSET),
-                "min-width": 700,
-                "min-height": 600
+                "min-height": 600,
+                "min-width": 700
             }
         )

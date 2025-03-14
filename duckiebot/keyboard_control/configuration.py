@@ -21,7 +21,21 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
         """
         parser = argparse.ArgumentParser("dts duckiebot keyboard_control")
         parser.add_argument(
+            "--fullscreen",
+            default=False,
+            action="store_true",
+            help="Run in fullscreen mode"
+        )
+        parser.add_argument(
+            "--on-top",
+            default=False,
+            action="store_true",
+            help="Always stay on top of other windows"
+        )
+        parser.add_argument(
+            "--verbose",
             "-vv",
+            dest="verbose",
             default=False,
             action="store_true",
             help="Run in verbose mode"
