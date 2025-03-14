@@ -315,14 +315,13 @@ class DuckietownViewerInstance:
             time.sleep(0.5)
 
     def _start_frontend(self, fullscreen: Optional[bool], menu: Optional[bool], args: WindowArgs):
-        if "url" in args.keys():
-            app_config = []
-        else:
+        app_config = ["--no-sandbox"]
+        if "url" not in args.keys():
             if self._backend_ip is None:
                 raise ValueError("Backend not ready. This should not have happened.")
-            app_config = [
-                "--url", f"http://{self._backend_ip}:{self._BACKEND_REMOTE_PORT}/app/",
-            ]
+            app_config.extend([
+                "--url",
+                f"http://{self._backend_ip}:{self._BACKEND_REMOTE_PORT}/app/"])
         if fullscreen:
             app_config.append("--fullscreen")
         if menu:
