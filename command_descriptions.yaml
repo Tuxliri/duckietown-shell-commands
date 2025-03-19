@@ -22,8 +22,6 @@ code:
     workbench: &code_workbench
       description: Run a DT project agent against a DT robot
     wb: *code_workbench
-commands:
-  description: Get the available DTS commands
 config:
   description: Account configuration commands
   subcommands:
@@ -214,8 +212,6 @@ hub:
   description: Open the DT Hub
 init_sd_card:
   description: Initialize an SD card
-install:
-  description: Install a command set
 logs:
   description: Logging commands
   subcommands:
@@ -243,26 +239,6 @@ map:
   subcommands:
     editor:
       description: Open DT map editor
-profile:
-  description: DTS profile commands
-  subcommands:
-    dependencies:
-      description: DTS profile dependency commands
-      subcommands:
-        reinstall:
-          description: Reinstall the dependencies for the current DTS profile
-    list: &profile_list
-      description: Get a list of the available DTS profiles
-    ls: *profile_list
-    new:
-      description: Create a new DTS profile
-    switch:
-      description: Switch to a different DTS profile
-    venv:
-      description: DTS profile Python virtual environment commands
-      subcommands:
-        reset:
-          description: Reset the Python virtual environment for the current DTS profile
 setup:
   description: Certificate Authority commands
   subcommands:
@@ -296,8 +272,6 @@ stack:
       description: Run stack on DT robot
 start_gui_tools:
   description: Start DT GUI tools
-uninstall:
-  description: Uninstall a command set
 vscode:
   description: VS Code commands
   subcommands:
