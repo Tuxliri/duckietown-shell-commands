@@ -16,27 +16,6 @@ services:
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
-  driver-camera:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-camera
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    pid: host
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: sensor-camera
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-      # nvargus socket
-      - /tmp:/tmp
-      # camera socket
-      - /run/udev:/run/udev
-
   driver-tof:
     image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
     container_name: driver-tof

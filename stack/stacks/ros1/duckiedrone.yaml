@@ -6,6 +6,7 @@ services:
     container_name: ros1-camera
     restart: unless-stopped
     network_mode: host
+    privileged: true
     pid: host
     environment:
       DT_LAUNCHER: sensor-camera
