@@ -201,9 +201,6 @@ exercises:
       description: Run DT exercise in JupyterLab
     test:
       description: Test DT exercise
-exit: &exit
-  description: Exit the DTS
-quit: *exit
 fleet:
   description: DT fleet commands
   subcommands:
@@ -299,22 +296,8 @@ stack:
       description: Run stack on DT robot
 start_gui_tools:
   description: Start DT GUI tools
-tok: &tok
-  description: DT token commands
-  subcommands:
-    set:
-      description: Set the DT token
-    status:
-      description: Get status of the current DT token
-    verify:
-      description: Verify a DT token
-token: *tok
 uninstall:
   description: Uninstall a command set
-update:
-  description: Update a command set
-version:
-  description: Get the version information for the DTS and command sets
 vscode:
   description: VS Code commands
   subcommands:
