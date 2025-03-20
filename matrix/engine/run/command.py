@@ -102,7 +102,7 @@ class MatrixEngine:
                 "IMPERSONATE_GID": os.getgid(),
             },
             "ports": {},
-            "name": f"dts-matrix-engine"
+            "name": "dts-matrix-engine"
         }
         engine_config.update(DUCKIEMATRIX_ENGINE_IMAGE_CONFIG)
         # set the mode
@@ -128,7 +128,7 @@ class MatrixEngine:
             engine_config["command"] += ["--map", map_name]
         # delta t
         if parsed.delta_t is not None:
-            engine_config["command"] += ["--delta-t", parsed.delta_t]
+            engine_config["command"] += ["--delta-t", str(parsed.delta_t)]
         # robot links
         for link in parsed.links:
             engine_config["command"] += ["--link", *link]
