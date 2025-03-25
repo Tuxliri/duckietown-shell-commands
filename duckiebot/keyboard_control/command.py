@@ -29,6 +29,7 @@ class DTCommand(DTCommandAbs):
             window_args={
                 "icon": get_asset_icon_path(ICON_ASSET),
                 "min-height": 600,
-                "min-width": 725
+                "min-width": 725,
+                "width": 725
             }
         )
