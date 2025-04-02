@@ -1,10 +1,10 @@
 import argparse
+import time
 
 from dt_shell import DTCommandAbs, DTShell, dtslogger
 
 
 class DTCommand(DTCommandAbs):
-
     help = "Restarts a Virtual Robot"
 
     @staticmethod
@@ -21,6 +21,7 @@ class DTCommand(DTCommandAbs):
         found = shell.include.duckiebot.virtual.stop.command(shell, [parsed.robot])
         if not found:
             return False
+        time.sleep(1)
         # start
         dtslogger.info(f"Starting up virtual robot '{parsed.robot}'...")
         shell.include.duckiebot.virtual.start.command(shell, [parsed.robot])
