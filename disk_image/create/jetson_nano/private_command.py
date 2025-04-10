@@ -67,7 +67,7 @@ DISK_IMAGE_PARTITION_TABLE = {
     "RP4": 14,
 }
 DISK_IMAGE_SIZE_GB = 20
-DISK_IMAGE_VERSION = "1.4.0"
+DISK_IMAGE_VERSION = "1.4.1"
 ROOT_PARTITION = "APP"
 JETPACK_VERSION = "4.6.6"
 DEVICE_ARCH = "arm64v8"
@@ -113,6 +113,7 @@ APT_PACKAGES_TO_INSTALL = [
     # TODO: no releases contain this
     "gnupg2",
     "pass",
+    "nvidia-container-runtime"
 ]
 APT_PACKAGES_TO_HOLD = [
     # list here packages that cannot be updated through `chroot`
@@ -557,6 +558,14 @@ class DTCommand(DTCommandAbs):
                             "The full error is:\n\t%s" % str(e)
                         )
                         exit(2)
+                    # Fix the incorrect base image password for the `duckie` user (it should be `quackquack` rather than `quack`)
+                    try:
+                        output = run_cmd_in_partition(
+                            ROOT_PARTITION, 'echo "duckie:quackquack" | chpasswd', get_output=True
+                        )
+                    except (BaseException, subprocess.CalledProcessError) as e:
+                        dtslogger.error(f"An error occurred when fixing the `duckie` user password:\n{e}")
+
                     # compile list of packages to hold
                     to_hold = " ".join(APT_PACKAGES_TO_HOLD)
                     # from this point on, if anything weird happens, unmount the `root` disk
@@ -567,7 +576,12 @@ class DTCommand(DTCommandAbs):
                             "echo 'deb https://repo.download.nvidia.com/jetson/common r32.7 main\\ndeb https://repo.download.nvidia.com/jetson/t210 r32.7 main' "
                             + "> /etc/apt/sources.list.d/nvidia-l4t-apt-source.list" 
                         )
-                        # Remove blueman (causing errors)
+                        # Disable GUI
+                        run_cmd_in_partition(
+                            ROOT_PARTITION,
+                            "systemctl set-default multi-user.target"
+                        )
+                        # Remove blueman (causing errors) and GNOME
                         run_cmd_in_partition(
                             ROOT_PARTITION,
                             "apt remove -y --purge blueman gdm3"
