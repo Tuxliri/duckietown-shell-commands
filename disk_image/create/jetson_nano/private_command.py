@@ -578,8 +578,7 @@ class DTCommand(DTCommandAbs):
                         # Fix apt sources for jetpack versions 4.6.x
                         run_cmd_in_partition(
                             ROOT_PARTITION,
-                            "echo 'deb https://repo.download.nvidia.com/jetson/common r32.7 main\\ndeb https://repo.download.nvidia.com/jetson/t210 r32.7 main' "
-                            + "> /etc/apt/sources.list.d/nvidia-l4t-apt-source.list" 
+                            "echo $'deb https://repo.download.nvidia.com/jetson/common r32.7 main\ndeb https://repo.download.nvidia.com/jetson/t210 r32.7 main' > /etc/apt/sources.list.d/nvidia-l4t-apt-source.list",
                         )
                         # Remove blueman (causing errors)
                         run_cmd_in_partition(
