@@ -411,6 +411,7 @@ def validator_autoboot_stack(shell, local_path, remote_path, **kwargs):
             f"Docker image '{srv_image}' for the service '{srv_name}' but "
             f"no candidates were found in the list of modules to load. "
             f"List of modules to load is:\n\t{modules_list}"
+            f"\nCandidates:\n\t{candidates}\n"
         )
         dtslogger.error(msg)
         raise ValueError(msg)
