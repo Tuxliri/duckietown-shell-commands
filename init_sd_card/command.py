@@ -57,7 +57,7 @@ def DISK_IMAGE_VERSION(robot_configuration, experimental=False):
     board_to_disk_image_version = {
         "raspberry_pi": {"stable": "1.2.1", "experimental": "1.2.1"},
         "raspberry_pi_64": {"stable": "2.0.0", "experimental": "2.0.0"},
-        "jetson_nano_4gb": {"stable": "1.4.1", "experimental": "1.4.1"},
+        "jetson_nano_4gb": {"stable": "1.4.2", "experimental": "1.4.2"},
         "jetson_nano_2gb": {"stable": "1.2.2", "experimental": "1.2.2"},
     }
     board, _ = get_robot_hardware(robot_configuration)
@@ -81,7 +81,7 @@ def PLACEHOLDERS_VERSION(robot_configuration, experimental=False):
         },
         "jetson_nano_4gb": {
             # - stable
-            "1.4.1": "1.1",
+            "1.4.2": "1.1",
             # - experimental
             "-----": "1.1",
         },
@@ -316,8 +316,11 @@ class DTCommand(DTCommandAbs):
                 raise InvalidUserInput(msg)
         # compile hardware specific disk image name and url
         base_disk_image = BASE_DISK_IMAGE(parsed.robot_configuration, parsed.experimental)
+
         # compile files destinations
-        in_file = lambda e: os.path.join(parsed.workdir, f"{base_disk_image}.{e}")
+        def in_file(e):
+            return os.path.join(parsed.workdir, f"{base_disk_image}.{e}")
+
         # notify about licenses
         if "license" not in steps:
             board, _ = get_robot_hardware(parsed.robot_configuration)
