@@ -68,9 +68,9 @@ DISK_IMAGE_PARTITION_TABLE = {
     "RP4": 14,
 }
 DISK_IMAGE_SIZE_GB = 20
-DISK_IMAGE_VERSION = "1.3.0"
+DISK_IMAGE_VERSION = "1.4.0"
 ROOT_PARTITION = "APP"
-JETPACK_VERSION = "4.4.1"
+JETPACK_VERSION = "4.6.6"
 DEVICE_ARCH = "arm64v8"
 JETPACK_DISK_IMAGE_NAME = lambda v: f"nvidia-jetpack-v{JETPACK_VERSION}-{v}"
 INPUT_DISK_IMAGE_URL = (
@@ -575,13 +575,23 @@ class DTCommand(DTCommandAbs):
                     to_hold = " ".join(APT_PACKAGES_TO_HOLD)
                     # from this point on, if anything weird happens, unmount the `root` disk
                     try:
+                        # Fix apt sources for jetpack versions 4.6.x
+                        run_cmd_in_partition(
+                            ROOT_PARTITION,
+                            "echo 'deb https://repo.download.nvidia.com/jetson/common r32.7 main\\ndeb https://repo.download.nvidia.com/jetson/t210 r32.7 main' "
+                            + "> /etc/apt/sources.list.d/nvidia-l4t-apt-source.list" 
+                        )
+                        # Remove blueman (causing errors)
+                        run_cmd_in_partition(
+                            ROOT_PARTITION,
+                            "apt remove -y --purge blueman gdm3"
+                        )
                         # run full-upgrade on the new root
                         run_cmd_in_partition(
                             ROOT_PARTITION,
                             "apt update && "
                             + (f"apt-mark hold {to_hold}" if len(to_hold) else ":")
-                            + " && "
-                            + "apt --yes --force-yes --no-install-recommends"
+                            + " && apt -y --no-install-recommends"
                             ' -o Dpkg::Options::="--force-confdef"'
                             ' -o Dpkg::Options::="--force-confold"'
                             " full-upgrade && " + (f"apt-mark unhold {to_hold}" if len(to_hold) else ":"),
@@ -911,9 +921,9 @@ class DTCommand(DTCommandAbs):
         # ------>
         # Step: push
         if parsed.push:
-            if "compress" not in parsed.steps:
-                dtslogger.warning("The step 'compress' was not performed. No artifacts to push.")
-                return
+            # if "compress" not in parsed.steps:
+            #     dtslogger.warning("The step 'compress' was not performed. No artifacts to push.")
+            #     return
             dtslogger.info("Step BEGIN: push")
             dtslogger.info("Pushing disk image...")
             shell.include.data.push.command(
