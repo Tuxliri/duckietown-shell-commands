@@ -107,6 +107,20 @@ services:
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
+  image-relayer:
+    image: ${REGISTRY}/duckietown/dt-ros-interface:ente-${ARCH}
+    container_name: ros1-image-relayer
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    environment:
+      DT_LAUNCHER: image-relayer
+      DT_SUPERUSER: 1
+    volumes:
+      - /data/ramdisk/dtps:/dtps
+      # avahi socket
+      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
+
   ros:
     image: ${REGISTRY}/duckietown/dt-ros-commons:ente-${ARCH}
     container_name: ros1
@@ -141,4 +155,3 @@ services:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-
