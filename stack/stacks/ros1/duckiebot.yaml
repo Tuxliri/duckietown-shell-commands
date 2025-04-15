@@ -121,6 +121,20 @@ services:
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
+  control-mapper:
+    image: ${REGISTRY}/duckietown/dt-ros-interface:ente-${ARCH}
+    container_name: ros1-control-mapper
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    environment:
+      DT_LAUNCHER: control-mapper
+      DT_SUPERUSER: 1
+    volumes:
+      - /data/ramdisk/dtps:/dtps
+      # avahi socket
+      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
+
   ros:
     image: ${REGISTRY}/duckietown/dt-ros-commons:ente-${ARCH}
     container_name: ros1
