@@ -26,6 +26,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: sensor-camera
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
@@ -44,6 +45,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: sensor-tof
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
@@ -60,6 +62,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: sensor-imu
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
@@ -76,6 +79,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: sensor-power-button
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
@@ -92,6 +96,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: sensor-wheel-encoders
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
@@ -108,6 +113,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: actuator-wheels
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
@@ -124,6 +130,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: actuator-lights
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
@@ -140,6 +147,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: actuator-display
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
@@ -156,6 +164,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: control-mapper
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets

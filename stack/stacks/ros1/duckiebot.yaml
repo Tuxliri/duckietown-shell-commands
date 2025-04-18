@@ -116,6 +116,7 @@ services:
     environment:
       DT_LAUNCHER: image-relayer
       DT_SUPERUSER: 1
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket

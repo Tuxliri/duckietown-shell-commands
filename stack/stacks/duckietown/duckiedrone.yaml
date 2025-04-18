@@ -25,6 +25,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: sensor-tof
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
     volumes:
       - /data:/data
       # dtps sockets
