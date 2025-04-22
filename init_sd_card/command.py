@@ -59,6 +59,7 @@ def DISK_IMAGE_VERSION(robot_configuration, experimental=False):
         "raspberry_pi_64": {"stable": "2.0.0", "experimental": "2.0.0"},
         "jetson_nano_4gb": {"stable": "1.3.0", "experimental": "1.3.0"},
         "jetson_nano_2gb": {"stable": "1.2.2", "experimental": "1.2.2"},
+        "jetson_orin_nano": {"stable": "1.0.0", "experimental": "1.0.0"},
     }
     board, _ = get_robot_hardware(robot_configuration)
     stream = "stable" if not experimental else "experimental"
@@ -88,6 +89,12 @@ def PLACEHOLDERS_VERSION(robot_configuration, experimental=False):
         "jetson_nano_2gb": {
             # - stable
             "1.2.2": "1.1",
+            # - experimental
+            "-----": "1.1",
+        },
+        "jetson_orin_nano": {
+            # - stable
+            "1.0.0": "1.1",
             # - experimental
             "-----": "1.1",
         },
@@ -252,18 +259,18 @@ class DTCommand(DTCommandAbs):
             else:
                 parsed.wifi = DEFAULT_WIFI_CONFIG
         # make sure the token is set
-        # noinspection PyBroadException
-        try:
-            shell.get_dt1_token()
-        except Exception:
-            dtslogger.error(
-                "You have not set a token for this shell.\n"
-                "You can get a token from the following URL,\n\n"
-                "\thttps://hub.duckietown.com/token   \n\n"
-                "and set it using the following command,\n\n"
-                "\tdts tok set\n"
-            )
-            return
+        # # noinspection PyBroadException
+        # try:
+        #     shell.get_dt1_token()
+        # except Exception:
+        #     dtslogger.error(
+        #         "You have not set a token for this shell.\n"
+        #         "You can get a token from the following URL,\n\n"
+        #         "\thttps://hub.duckietown.com/token   \n\n"
+        #         "and set it using the following command,\n\n"
+        #         "\tdts tok set\n"
+        #     )
+        #     return
         # print some usage tips and tricks
         print(TIPS_AND_TRICKS)
         # get the robot type
