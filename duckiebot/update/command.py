@@ -61,6 +61,9 @@ class DTCommand(DTCommandAbs):
         parser.add_argument(
             "-t", "--robot-type", type=str, default=None, help="Force using a specific robot type (the -f flag MUST also be selected)"
         )
+        parser.add_argument(
+            "--robot-hardware", type=str, default=None, help="Force using a specific robot hardware (the -f flag MUST also be selected)"
+        )
 
         parser.add_argument("robot", nargs=1, help="Name of the Robot to update")
         # parse arguments
@@ -80,14 +83,17 @@ class DTCommand(DTCommandAbs):
 
         # get the robot type
         rtype: Optional[str]
+        robot_hardware: Optional[str]
         if kv.is_available():
             rtype = kv.get(str, "robot/type", None)
+            robot_hardware = kv.get(str, "robot/hardware", None)
         else:
+            robot_hardware = None
             rtype = None
 
         if rtype is None and parsed.robot_type is None:
             dtslogger.warning(f"Could not get the robot type from robot '{robot}'")
-            rtype: Optional[str] = questionary.select(
+            rtype = questionary.select(
                 "Select robot type:", choices=["duckiebot", "duckiedrone"]
             ).unsafe_ask()
             if rtype is None:
@@ -100,10 +106,29 @@ class DTCommand(DTCommandAbs):
             
         assert rtype is not None
 
+        if robot_hardware is None and parsed.robot_hardware is None:
+            dtslogger.warning(f"Could not get the robot hardware from robot '{robot}'")
+            robot_hardware = questionary.select(
+                "Enter robot hardware:",
+                choices=["jetson_orin_nano", "jetson_nano", "raspberry_pi_64", "raspberry_pi", "virtual"],
+            ).unsafe_ask()
+            if not robot_hardware:
+                raise UserAborted()
+            dtslogger.info(f"Declared robot hardware: {robot_hardware}")
+        elif parsed.force and parsed.robot_hardware is not None:
+            robot_hardware = parsed.robot_hardware
+        else:
+            dtslogger.info(f"Detected robot hardware: {robot_hardware}")
+
         # replace the placeholder in the stacks
         resolved_stacks: Dict[str, str] = {}
+        
         for project, stack_fmt in stacks.items():
-            resolved_stacks[project] = stack_fmt.format(robot_type=rtype)
+            if robot_hardware == "jetson_orin_nano" and project == "duckietown":
+                stack_fmt = stack_fmt.replace("{robot_type}", "duckiebot-orin")
+            else:
+                stack_fmt = stack_fmt.format(robot_type=rtype)
+            resolved_stacks[project] = stack_fmt
         stacks = resolved_stacks
 
         # check whether the robot is using a different distro
