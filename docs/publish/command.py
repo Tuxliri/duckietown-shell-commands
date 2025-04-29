@@ -27,29 +27,30 @@ CONTAINER_RSA_KEY_LOCATION = "/ssh/id_rsa"
 SAFE_BRANCH_REGEX = re.compile("^[a-z]+-staging$")
 
 SUPPORTED_PROJECT_TYPES = {
-    "template-book": {"2", },
-    "template-library": {"2", },
-    "template-basic": {"4", },
+    "template-book": {
+        "2",
+    },
+    "template-library": {
+        "2",
+    },
+    "template-basic": {
+        "4",
+    },
+    "template-ros": {
+        "4",
+    },
 }
 
 
 class DTCommand(DTCommandAbs):
-
     @staticmethod
     def command(shell: DTShell, args, **kwargs):
         # Configure args
         parser = argparse.ArgumentParser()
         parser.add_argument(
-            "-C",
-            "--workdir",
-            default=os.getcwd(),
-            help="Directory containing the book to publish"
+            "-C", "--workdir", default=os.getcwd(), help="Directory containing the book to publish"
         )
-        parser.add_argument(
-            "--distro",
-            default=None,
-            help="Which base distro (jupyter-book) to use"
-        )
+        parser.add_argument("--distro", default=None, help="Which base distro (jupyter-book) to use")
         parser.add_argument(
             "--force",
             default=False,
@@ -60,7 +61,7 @@ class DTCommand(DTCommandAbs):
             "destination",
             type=str,
             nargs=1,
-            help="Destination hostname of the website to publish, e.g., 'docs.duckietown.com'"
+            help="Destination hostname of the website to publish, e.g., 'docs.duckietown.com'",
         )
 
         # get pre-parsed or parse arguments
@@ -75,15 +76,19 @@ class DTCommand(DTCommandAbs):
 
         # make sure we are building the right project type
         if project.type not in SUPPORTED_PROJECT_TYPES:
-            dtslogger.error(f"Project of type '{project.type}' not supported. Only projects of type "
-                            f"{', '.join(SUPPORTED_PROJECT_TYPES)} can be built with 'dts docs build'.")
+            dtslogger.error(
+                f"Project of type '{project.type}' not supported. Only projects of type "
+                f"{', '.join(SUPPORTED_PROJECT_TYPES)} can be built with 'dts docs build'."
+            )
             return False
         supported_versions: Set[str] = SUPPORTED_PROJECT_TYPES[project.type]
 
         # make sure we support this project type version
         if project.type_version not in supported_versions:
-            dtslogger.error(f"Project of type '{project.type}' version '{project.type_version}' is "
-                            f"not supported. Only versions {', '.join(supported_versions)} are.")
+            dtslogger.error(
+                f"Project of type '{project.type}' version '{project.type_version}' is "
+                f"not supported. Only versions {', '.join(supported_versions)} are."
+            )
             return False
 
         # variables
@@ -102,8 +107,10 @@ class DTCommand(DTCommandAbs):
 
         # safe branch names
         if not SAFE_BRANCH_REGEX.match(BOOK_BRANCH_NAME) and not parsed.force:
-            dtslogger.error(f"Users can only publish branches matching the pattern "
-                            f"'{SAFE_BRANCH_REGEX.pattern}', unless forced (--force).")
+            dtslogger.error(
+                f"Users can only publish branches matching the pattern "
+                f"'{SAFE_BRANCH_REGEX.pattern}', unless forced (--force)."
+            )
             exit(1)
 
         # custom distro
@@ -189,7 +196,7 @@ class DTCommand(DTCommandAbs):
             url: str = f"https://{parsed.destination}/{BOOK_BRANCH_NAME}/{published_title}/index.html"
             bar: str = "=" * len(url)
             spc: str = " " * len(url)
-            pspc: str = " " * (len(url)-len(BOOK_NAME))
+            pspc: str = " " * (len(url) - len(BOOK_NAME))
             dtslogger.info(
                 f"\n\n"
                 f"====================={bar}===========================================\n"
