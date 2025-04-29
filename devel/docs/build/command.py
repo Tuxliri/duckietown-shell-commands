@@ -177,7 +177,7 @@ class DTCommand(DTCommandAbs):
         container.wait()
 
         # copy the results back to the host
-        bits, stat = container.get_archive(path=f"/{project.name}")
+        bits, stat = container.get_archive(path="/")
         out_files_buf = io.BytesIO()
         for b in bits:
             out_files_buf.write(b)
