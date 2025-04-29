@@ -138,6 +138,18 @@ class DTCommand(DTCommandAbs):
             action="store_true",
             help="Run in verbose mode"
         )
+        parser.add_argument(
+            "--frame_rate",
+            default=None,
+            type=int,
+            help="Renderer frame rate"
+        )
+        parser.add_argument(
+            "--mouse_sensitivity",
+            default=None,
+            type=int,
+            help="Mouse sensitivity"
+        )
         parsed, _ = parser.parse_known_args(args=args)
         return parsed
 
@@ -218,6 +230,12 @@ class DTCommand(DTCommandAbs):
             # custom renderer key
             if parsed.renderer_key is not None:
                 app_config += ["--key", parsed.renderer_key]
+            # renderer frame rate
+            if parsed.frame_rate is not None:
+                app_config += ["--frame_rate", parsed.frame_rate]
+            # mouse sensitivity
+            if parsed.mouse_sensitivity is not None:
+                app_config += ["--mouse_sensitivity", parsed.mouse_sensitivity]
             # ---
             dtslogger.info("Renderer configured!")
             # RENDERER is now configured
