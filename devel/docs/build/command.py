@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import tarfile
+import shutil
 
 import docker
 
@@ -177,7 +178,7 @@ class DTCommand(DTCommandAbs):
         container.wait()
 
         # copy the results back to the host
-        bits, stat = container.get_archive(path="/")
+        bits, stat = container.get_archive(path=f"/{project.name}")
         out_files_buf = io.BytesIO()
         for b in bits:
             out_files_buf.write(b)
@@ -189,6 +190,14 @@ class DTCommand(DTCommandAbs):
         out_files_buf.seek(0)
         with open(repo_file("html", "package.tgz"), "wb") as fout:
             fout.write(out_files_buf.read())
+
+        source_dir = repo_file(f"html/{project.name}")
+        dest_dir = repo_file("html")
+
+        for filename in os.listdir(source_dir):
+            source_path = os.path.join(source_dir, filename)
+            destination_path = os.path.join(dest_dir, filename)
+            shutil.move(source_path, destination_path)
 
         # delete container
         container.remove()
