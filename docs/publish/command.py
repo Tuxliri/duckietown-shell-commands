@@ -20,7 +20,7 @@ except ImportError:
     raise ShellNeedsUpdate("5.4.0+")
 # NOTE: this is to avoid breaking the user workspace
 
-DCSS_RSA_SECRET_LOCATION = "secrets/rsa/{dns}/id_rsa"
+DCSS_RSA_SECRET_LOCATION = "secrets/rsa/ssh-{dns}/id_rsa"
 DCSS_RSA_SECRET_SPACE = "private"
 SSH_USERNAME = "duckie"
 CONTAINER_RSA_KEY_LOCATION = "/ssh/id_rsa"
@@ -100,6 +100,7 @@ class DTCommand(DTCommandAbs):
         html_dir: str = os.path.join(project.path, "html")
         pdf_dir: str = os.path.join(project.path, "pdf")
 
+        dns = parsed.destination
         # book-specific parameters
         SSH_HOSTNAME = f"ssh-{parsed.destination}"
         BOOK_NAME = project.name if project.name.startswith("book-") else f"book-{project.name}"
@@ -161,9 +162,17 @@ class DTCommand(DTCommandAbs):
                 ),
             )
             # setup key permissions
-            os.chmod(local_rsa, 0o600)
-            # mount key
-            volumes.append((local_rsa, CONTAINER_RSA_KEY_LOCATION, "ro"))
+            # download RSA key used to publish artifacts
+            token = os.environ.get("DUCKIETOWN_CI_DT_TOKEN", None)
+            client = DataClient(token)
+            storage = client.storage(DCSS_RSA_SECRET_SPACE)
+            rsa_key_remote = DCSS_RSA_SECRET_LOCATION.format(dns=dns)
+            dtslogger.debug(f"Downloading RSA key from [{DCSS_RSA_SECRET_SPACE}]:{rsa_key_remote}")
+            handler = storage.download(rsa_key_remote)
+            handler.join()
+            dtslogger.info("Download complete!")
+            handler.buffer.seek(0)
+            rsa_key = handler.buffer.read().decode("utf-8")
 
             # start the publish process
             dtslogger.info(f"Publishing project '{BOOK_NAME}'...")
@@ -175,9 +184,13 @@ class DTCommand(DTCommandAbs):
                 "name": container_name,
                 "envs": {
                     "DT_LAUNCHER": "publish-artifacts",
+                    "SSH_KEY": rsa_key,
+                    "LIBRARY_HOSTNAME": dns,
+                    "LIBRARY_DISTRO": project.distro,
                     "SSH_HOSTNAME": SSH_HOSTNAME,
                     "SSH_USERNAME": SSH_USERNAME,
                     "BOOK_NAME": BOOK_NAME,
+                    "DT_SUPERUSER": "1",
                     "BOOK_BRANCH_NAME": BOOK_BRANCH_NAME,
                 },
                 "stream": True,
