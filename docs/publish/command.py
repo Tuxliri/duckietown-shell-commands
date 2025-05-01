@@ -22,7 +22,7 @@ except ImportError:
     raise ShellNeedsUpdate("5.4.0+")
 # NOTE: this is to avoid breaking the user workspace
 
-DCSS_RSA_SECRET_LOCATION = "secrets/rsa/{dns}/id_rsa"
+DCSS_RSA_SECRET_LOCATION = "secrets/rsa/ssh-{dns}/id_rsa"
 DCSS_RSA_SECRET_SPACE = "private"
 SSH_USERNAME = "duckie"
 CONTAINER_RSA_KEY_LOCATION = "/ssh/id_rsa"
