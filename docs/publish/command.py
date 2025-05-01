@@ -190,7 +190,7 @@ class DTCommand(DTCommandAbs):
             },
             "stream": True,
         }
-        dtslogger.debug(
+        dtslogger.info(
             f"Calling docker.run with arguments:\n" f"{json.dumps(args, indent=4, sort_keys=True)}\n"
         )
         logs = docker.run(**args)
