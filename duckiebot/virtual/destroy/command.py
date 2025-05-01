@@ -61,7 +61,7 @@ class DTCommand(DTCommandAbs):
 
         # ask for confirmation (unless skipped)
         confirmed = ask_confirmation(
-            f"The virtual robot '{parsed.robot}' will be destroyed together will all its data. "
+            f"The virtual robot '{parsed.robot}' will be destroyed together with all of its data. "
             f"This cannot be undone.",
             default="n"
         ) if not parsed.yes else True
