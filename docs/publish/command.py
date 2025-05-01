@@ -25,7 +25,6 @@ except ImportError:
 DCSS_RSA_SECRET_LOCATION = "secrets/rsa/ssh-{dns}/id_rsa"
 DCSS_RSA_SECRET_SPACE = "private"
 SSH_USERNAME = "duckie"
-CONTAINER_RSA_KEY_LOCATION = "/ssh/id_rsa"
 SAFE_BRANCH_REGEX = re.compile("^[a-z]+-staging$")
 
 SUPPORTED_PROJECT_TYPES = {
@@ -172,6 +171,7 @@ class DTCommand(DTCommandAbs):
             "volumes": volumes,
             "name": container_name,
             "envs": {
+                "DEBUG": "1",
                 "DT_LAUNCHER": "publish-artifacts",
                 "SSH_KEY": rsa_key,
                 "LIBRARY_HOSTNAME": dns,
