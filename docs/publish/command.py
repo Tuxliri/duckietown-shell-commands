@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import sys
 from dt_data_api import DataClient
 
 from tempfile import TemporaryDirectory
