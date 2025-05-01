@@ -135,6 +135,8 @@ class DTCommand(DTCommandAbs):
         jb_image_name: str = f"{registry_to_use}/duckietown/dt-jupyter-book:{tag}"
         dtslogger.debug(f"Using JupyterBook image '{jb_image_name}'")
 
+        mount_flags = lambda f: ",".join([f] + (["cached"] if sys.platform == "darwin" else []))
+
         book_dir = project.docs_path()
         volumes.append((book_dir, "/book", mount_flags(ro)))
 
