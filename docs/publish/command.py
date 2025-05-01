@@ -3,6 +3,8 @@ import json
 import logging
 import os
 import re
+from dt_data_api import DataClient
+
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from typing import Tuple, List, Set
@@ -146,62 +148,64 @@ class DTCommand(DTCommandAbs):
             pdf_dir: str = os.path.join(project.path, "pdf")
             volumes.append((pdf_dir, "/out/pdf", "rw"))
 
-            # setup key permissions
-            # download RSA key used to publish artifacts
-            token = os.environ.get("DUCKIETOWN_CI_DT_TOKEN", None)
-            client = DataClient(token)
-            storage = client.storage(DCSS_RSA_SECRET_SPACE)
-            rsa_key_remote = DCSS_RSA_SECRET_LOCATION.format(dns=dns)
-            dtslogger.debug(f"Downloading RSA key from [{DCSS_RSA_SECRET_SPACE}]:{rsa_key_remote}")
-            handler = storage.download(rsa_key_remote)
-            handler.join()
-            dtslogger.info("Download complete!")
-            handler.buffer.seek(0)
-            rsa_key = handler.buffer.read().decode("utf-8")
+        # publish
+        # download RSA key
+        # setup key permissions
+        # download RSA key used to publish artifacts
+        token = os.environ.get("DUCKIETOWN_CI_DT_TOKEN", None)
+        client = DataClient(token)
+        storage = client.storage(DCSS_RSA_SECRET_SPACE)
+        rsa_key_remote = DCSS_RSA_SECRET_LOCATION.format(dns=dns)
+        dtslogger.debug(f"Downloading RSA key from [{DCSS_RSA_SECRET_SPACE}]:{rsa_key_remote}")
+        handler = storage.download(rsa_key_remote)
+        handler.join()
+        dtslogger.info("Download complete!")
+        handler.buffer.seek(0)
+        rsa_key = handler.buffer.read().decode("utf-8")
 
-            # start the publish process
-            dtslogger.info(f"Publishing project '{BOOK_NAME}'...")
-            container_name: str = f"docs-publish-{BOOK_NAME}"
-            args = {
-                "image": jb_image_name,
-                "remove": True,
-                "volumes": volumes,
-                "name": container_name,
-                "envs": {
-                    "DT_LAUNCHER": "publish-artifacts",
-                    "SSH_KEY": rsa_key,
-                    "LIBRARY_HOSTNAME": dns,
-                    "LIBRARY_DISTRO": project.distro,
-                    "SSH_HOSTNAME": SSH_HOSTNAME,
-                    "SSH_USERNAME": SSH_USERNAME,
-                    "BOOK_NAME": BOOK_NAME,
-                    "DT_SUPERUSER": "1",
-                    "BOOK_BRANCH_NAME": BOOK_BRANCH_NAME,
-                },
-                "stream": True,
-            }
-            dtslogger.debug(
-                f"Calling docker.run with arguments:\n" f"{json.dumps(args, indent=4, sort_keys=True)}\n"
-            )
-            logs = docker.run(**args)
+        # start the publish process
+        dtslogger.info(f"Publishing project '{BOOK_NAME}'...")
+        container_name: str = f"docs-publish-{BOOK_NAME}"
+        args = {
+            "image": jb_image_name,
+            "remove": True,
+            "volumes": volumes,
+            "name": container_name,
+            "envs": {
+                "DT_LAUNCHER": "publish-artifacts",
+                "SSH_KEY": rsa_key,
+                "LIBRARY_HOSTNAME": dns,
+                "LIBRARY_DISTRO": project.distro,
+                "SSH_HOSTNAME": SSH_HOSTNAME,
+                "SSH_USERNAME": SSH_USERNAME,
+                "BOOK_NAME": BOOK_NAME,
+                "DT_SUPERUSER": "1",
+                "BOOK_BRANCH_NAME": BOOK_BRANCH_NAME,
+            },
+            "stream": True,
+        }
+        dtslogger.debug(
+            f"Calling docker.run with arguments:\n" f"{json.dumps(args, indent=4, sort_keys=True)}\n"
+        )
+        logs = docker.run(**args)
 
-            # consume logs
-            for (stream, line) in logs:
-                line = line.decode("utf-8")
-                print(line, end="")
+        # consume logs
+        for (stream, line) in logs:
+            line = line.decode("utf-8")
+            print(line, end="")
 
-            published_title: str = BOOK_NAME.replace("book-", "", 1)
-            url: str = f"https://{parsed.destination}/{BOOK_BRANCH_NAME}/{published_title}/index.html"
-            bar: str = "=" * len(url)
-            spc: str = " " * len(url)
-            pspc: str = " " * (len(url) - len(BOOK_NAME))
-            dtslogger.info(
-                f"\n\n"
-                f"====================={bar}===========================================\n"
-                f"|                    {spc}                                          |\n"
-                f"|    Project '{BOOK_NAME}' published to:{pspc}                                  |\n"
-                f"|                    {spc}                                          |\n"
-                f"|        >   {url}                                                  |\n"
-                f"|                    {spc}                                          |\n"
-                f"====================={bar}===========================================\n"
-            )
+        published_title: str = BOOK_NAME.replace("book-", "", 1)
+        url: str = f"https://{parsed.destination}/{BOOK_BRANCH_NAME}/{published_title}/index.html"
+        bar: str = "=" * len(url)
+        spc: str = " " * len(url)
+        pspc: str = " " * (len(url) - len(BOOK_NAME))
+        dtslogger.info(
+            f"\n\n"
+            f"====================={bar}===========================================\n"
+            f"|                    {spc}                                          |\n"
+            f"|    Project '{BOOK_NAME}' published to:{pspc}                                  |\n"
+            f"|                    {spc}                                          |\n"
+            f"|        >   {url}                                                  |\n"
+            f"|                    {spc}                                          |\n"
+            f"====================={bar}===========================================\n"
+        )
