@@ -138,7 +138,7 @@ class DTCommand(DTCommandAbs):
         mount_flags = lambda f: ",".join([f] + (["cached"] if sys.platform == "darwin" else []))
 
         book_dir = project.docs_path()
-        volumes.append((book_dir, "/book", mount_flags(ro)))
+        volumes.append((book_dir, "/book", mount_flags("ro")))
 
         # check which artifacts need to be published
         publish_html: bool = os.path.exists(os.path.join(html_dir, "index.html"))
