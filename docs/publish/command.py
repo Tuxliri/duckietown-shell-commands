@@ -20,7 +20,7 @@ except ImportError:
     raise ShellNeedsUpdate("5.4.0+")
 # NOTE: this is to avoid breaking the user workspace
 
-DCSS_RSA_SECRET_LOCATION = "secrets/rsa/ssh-{dns}/id_rsa"
+DCSS_RSA_SECRET_LOCATION = "secrets/rsa/{dns}/id_rsa"
 DCSS_RSA_SECRET_SPACE = "private"
 SSH_USERNAME = "duckie"
 CONTAINER_RSA_KEY_LOCATION = "/ssh/id_rsa"
@@ -146,21 +146,6 @@ class DTCommand(DTCommandAbs):
             pdf_dir: str = os.path.join(project.path, "pdf")
             volumes.append((pdf_dir, "/out/pdf", "rw"))
 
-        # publish
-        with TemporaryDirectory() as tmpdir:
-            # download RSA key
-            dtslogger.info(f"Downloading RSA key for tunnel '{SSH_HOSTNAME}'...")
-            local_rsa = os.path.join(tmpdir, "id_rsa")
-            shell.include.data.get.command(
-                shell,
-                [],
-                parsed=SimpleNamespace(
-                    file=[local_rsa],
-                    object=[DCSS_RSA_SECRET_LOCATION.format(dns=SSH_HOSTNAME)],
-                    space=DCSS_RSA_SECRET_SPACE,
-                    token=os.environ.get("DUCKIETOWN_CI_DT_TOKEN", None),
-                ),
-            )
             # setup key permissions
             # download RSA key used to publish artifacts
             token = os.environ.get("DUCKIETOWN_CI_DT_TOKEN", None)
