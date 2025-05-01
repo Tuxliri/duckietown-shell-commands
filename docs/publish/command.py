@@ -135,6 +135,9 @@ class DTCommand(DTCommandAbs):
         jb_image_name: str = f"{registry_to_use}/duckietown/dt-jupyter-book:{tag}"
         dtslogger.debug(f"Using JupyterBook image '{jb_image_name}'")
 
+        book_dir = project.docs_path()
+        volumes.append((book_dir, "/book", mount_flags(ro)))
+
         # check which artifacts need to be published
         publish_html: bool = os.path.exists(os.path.join(html_dir, "index.html"))
         publish_pdf: bool = os.path.exists(os.path.join(pdf_dir, "book.pdf"))
