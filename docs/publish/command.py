@@ -136,22 +136,19 @@ class DTCommand(DTCommandAbs):
         jb_image_name: str = f"{registry_to_use}/duckietown/dt-jupyter-book:{tag}"
         dtslogger.debug(f"Using JupyterBook image '{jb_image_name}'")
 
-        mount_flags = lambda f: ",".join([f] + (["cached"] if sys.platform == "darwin" else []))
-
-        book_dir = project.docs_path()
-        volumes.append((book_dir, "/book", mount_flags("ro")))
-
         # check which artifacts need to be published
         publish_html: bool = os.path.exists(os.path.join(html_dir, "index.html"))
         publish_pdf: bool = os.path.exists(os.path.join(pdf_dir, "book.pdf"))
 
+        mount_flags = lambda f: ",".join([f] + (["cached"] if sys.platform == "darwin" else []))
+
         if publish_html:
             html_dir: str = os.path.join(project.path, "html")
-            volumes.append((html_dir, "/out/html", "rw"))
+            volumes.append((html_dir, "/out/html", mount_flags("ro")))
 
         if publish_pdf:
             pdf_dir: str = os.path.join(project.path, "pdf")
-            volumes.append((pdf_dir, "/out/pdf", "rw"))
+            volumes.append((pdf_dir, "/out/pdf", mount_flags("rw")))
 
         # publish
         # download RSA key
