@@ -10,8 +10,12 @@ from typing import Tuple, List, Optional, Set
 from dt_data_api import DataClient
 from dt_shell import DTCommandAbs, DTShell, dtslogger
 
-from utils.docker_utils import get_registry_to_use, get_endpoint_architecture, sanitize_docker_baseurl, \
-    get_cloud_builder
+from utils.docker_utils import (
+    get_registry_to_use,
+    get_endpoint_architecture,
+    sanitize_docker_baseurl,
+    get_cloud_builder,
+)
 from dtproject import DTProject
 from dt_shell.exceptions import ShellNeedsUpdate
 
@@ -40,13 +44,16 @@ LIBRARY_HOSTNAME = os.environ.get("DT_LIBRARY_HOSTNAME", DEFAULT_LIBRARY_HOSTNAM
 SUPPORTED_PROJECT_TYPES = {
     "template-book": {"2", "4"},
     "template-library": {"2", "4"},
-    "template-basic": {"4", },
-    "template-ros": {"4", },
+    "template-basic": {
+        "4",
+    },
+    "template-ros": {
+        "4",
+    },
 }
 
 
 class DTCommand(DTCommandAbs):
-
     @staticmethod
     def command(shell: DTShell, args, **kwargs):
         parser = argparse.ArgumentParser()
@@ -57,21 +64,14 @@ class DTCommand(DTCommandAbs):
             help="Directory containing the book to work on",
         )
         parser.add_argument(
-            "-H",
-            "--machine",
-            default=None,
-            help="Docker socket or hostname where to build the book"
+            "-H", "--machine", default=None, help="Docker socket or hostname where to build the book"
         )
         parser.add_argument(
             "--image",
             default=None,
-            help="Which environment image to use to build the book. By default, one will be built."
+            help="Which environment image to use to build the book. By default, one will be built.",
         )
-        parser.add_argument(
-            "--distro",
-            default=None,
-            help="Which base distro (jupyter-book) to use"
-        )
+        parser.add_argument("--distro", default=None, help="Which base distro (jupyter-book) to use")
         parser.add_argument(
             "--no-build",
             default=False,
@@ -153,15 +153,19 @@ class DTCommand(DTCommandAbs):
 
         # make sure we are building the right project type
         if project.type not in SUPPORTED_PROJECT_TYPES:
-            dtslogger.error(f"Project of type '{project.type}' not supported. Only projects of type "
-                            f"{', '.join(SUPPORTED_PROJECT_TYPES)} can be built with 'dts docs build'.")
+            dtslogger.error(
+                f"Project of type '{project.type}' not supported. Only projects of type "
+                f"{', '.join(SUPPORTED_PROJECT_TYPES)} can be built with 'dts docs build'."
+            )
             return False
         supported_versions: Set[str] = SUPPORTED_PROJECT_TYPES[project.type]
 
         # make sure we support this project type version
         if project.type_version not in supported_versions:
-            dtslogger.error(f"Project of type '{project.type}' version '{project.type_version}' is "
-                            f"not supported. Only versions {', '.join(supported_versions)} are.")
+            dtslogger.error(
+                f"Project of type '{project.type}' version '{project.type_version}' is "
+                f"not supported. Only versions {', '.join(supported_versions)} are."
+            )
             return False
 
         # incompatible arguments
@@ -176,7 +180,8 @@ class DTCommand(DTCommandAbs):
         # -  --image and --no-build
         if parsed.image and parsed.no_build:
             dtslogger.error(
-                "Argument --no-build is implicit when providing a custom environment with --image.")
+                "Argument --no-build is implicit when providing a custom environment with --image."
+            )
             exit(1)
         # -  --machine and not --ci
         if parsed.machine and not parsed.ci:
@@ -236,15 +241,19 @@ class DTCommand(DTCommandAbs):
 
                 # build jb (unless skipped)
                 if not parsed.no_build:
-                    env_build: bool = shell.include.docs.env.build.command(shell, args=[], parsed=SimpleNamespace(
-                        workdir=parsed.workdir,
-                        machine=parsed.machine,
-                        distro=parsed.distro,
-                        embed=parsed.ci,
-                        no_cache=parsed.no_cache,
-                        no_pull=parsed.no_pull,
-                        verbose=parsed.verbose,
-                    ))
+                    env_build: bool = shell.include.docs.env.build.command(
+                        shell,
+                        args=[],
+                        parsed=SimpleNamespace(
+                            workdir=parsed.workdir,
+                            machine=parsed.machine,
+                            distro=parsed.distro,
+                            embed=parsed.ci,
+                            no_cache=parsed.no_cache,
+                            no_pull=parsed.no_pull,
+                            verbose=parsed.verbose,
+                        ),
+                    )
                     if env_build in [True, None]:
                         dtslogger.info(f"Environment image for '{project.name}' built successfully")
                     else:
@@ -253,7 +262,8 @@ class DTCommand(DTCommandAbs):
                 else:
                     if not parsed.build_only:
                         dtslogger.info(
-                            f"Skipping environment build for '{project.name}', reusing last available")
+                            f"Skipping environment build for '{project.name}', reusing last available"
+                        )
             else:
                 # use plain JupyterBook
                 tag: str = f"{parsed.distro}-{arch}"
@@ -319,11 +329,11 @@ class DTCommand(DTCommandAbs):
                     "LIBRARY_DISTRO": parsed.distro,
                     "DEBUG": "1" if debug else "0",
                     "PRODUCTION_BUILD": "0",
-                    "OPTIMIZE_IMAGES": str(int(build_html and parsed.optimize))
+                    "OPTIMIZE_IMAGES": str(int(build_html and parsed.optimize)),
                 },
                 "volumes": volumes,
                 "name": container_name,
-                "stream": True
+                "stream": True,
             }
             dtslogger.debug(
                 f"Calling docker.run with arguments:\n" f"{json.dumps(args, indent=4, sort_keys=True)}\n"
@@ -409,11 +419,11 @@ class DTCommand(DTCommandAbs):
                     "DT_LAUNCHER": "ci-build",
                     "PRODUCTION_BUILD": str(int(production_build)),
                     "DT_SUPERUSER": "1",
-                    "ADOBE_PDF_VIEWER_CLIENT_ID": os.environ["ADOBE_PDF_VIEWER_CLIENT_ID"]
+                    "ADOBE_PDF_VIEWER_CLIENT_ID": os.environ["ADOBE_PDF_VIEWER_CLIENT_ID"],
                 },
-                "stream": True
+                "stream": True,
             }
-            dtslogger.debug(
+            dtslogger.info(
                 f"Calling docker.run with arguments:\n" f"{json.dumps(args, indent=4, sort_keys=True)}\n"
             )
             logs = docker.run(**args)

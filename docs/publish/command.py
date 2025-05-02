@@ -144,7 +144,7 @@ class DTCommand(DTCommandAbs):
 
         if publish_html:
             html_dir: str = os.path.join(project.path, "html")
-            volumes.append((html_dir, "/out/html", mount_flags("ro")))
+            volumes.append((html_dir, "/out/html", mount_flags("rw")))
 
         if publish_pdf:
             pdf_dir: str = os.path.join(project.path, "pdf")
