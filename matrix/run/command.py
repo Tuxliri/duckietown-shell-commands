@@ -139,15 +139,15 @@ class DTCommand(DTCommandAbs):
             help="Run in verbose mode"
         )
         parser.add_argument(
-            "--frame_rate",
+            "--frame-rate",
             default=None,
             type=int,
             help="Renderer frame rate"
         )
         parser.add_argument(
-            "--mouse_sensitivity",
+            "--mouse-sensitivity",
             default=None,
-            type=int,
+            type=float,
             help="Mouse sensitivity"
         )
         parsed, _ = parser.parse_known_args(args=args)
@@ -226,16 +226,18 @@ class DTCommand(DTCommandAbs):
                 app_config += ["--engine-hostname", parsed.engine_hostname]
             # custom renderer ID
             if parsed.renderer_id is not None:
-                app_config += ["--id", f"renderer_{parsed.renderer_id}"]
+                app_config += ["--renderer-id", f"renderer_{parsed.renderer_id}"]
             # custom renderer key
             if parsed.renderer_key is not None:
-                app_config += ["--key", parsed.renderer_key]
+                app_config += ["--renderer-key", parsed.renderer_key]
             # renderer frame rate
             if parsed.frame_rate is not None:
-                app_config += ["--frame_rate", parsed.frame_rate]
+                app_config += ["--frame-rate", str(parsed.frame_rate)]
             # mouse sensitivity
             if parsed.mouse_sensitivity is not None:
-                app_config += ["--mouse_sensitivity", parsed.mouse_sensitivity]
+                app_config += ["--mouse-sensitivity", str(parsed.mouse_sensitivity)]
+            # token)
+            app_config += ["--token", shell.profile.secrets.dt_token]
             # ---
             dtslogger.info("Renderer configured!")
             # RENDERER is now configured
