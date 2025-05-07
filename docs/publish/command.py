@@ -6,6 +6,8 @@ import re
 import sys
 from dt_data_api import DataClient
 
+from docker.types import Mount
+
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from typing import Tuple, List, Set
@@ -96,7 +98,7 @@ class DTCommand(DTCommandAbs):
         # variables
         registry_to_use = get_registry_to_use()
         debug = dtslogger.level <= logging.DEBUG
-        volumes: List[Tuple[str, str, str]] = []
+        mounts: List[Mount] = []
 
         # artifacts location
         html_dir: str = os.path.join(project.path, "html")
@@ -144,11 +146,13 @@ class DTCommand(DTCommandAbs):
 
         if publish_html:
             html_dir: str = os.path.join(project.path, "html")
-            volumes.append((html_dir, "/out/html", mount_flags("rw")))
+            html_mount = Mount("/out/html", html_dir, type="bind")
+            mount.append(html_mount)
+            # volumes.append((html_dir, "/out/html", mount_flags("rw")))
 
-        if publish_pdf:
-            pdf_dir: str = os.path.join(project.path, "pdf")
-            volumes.append((pdf_dir, "/out/pdf", mount_flags("rw")))
+        # if publish_pdf:
+        #    pdf_dir: str = os.path.join(project.path, "pdf")
+        #    volumes.append((pdf_dir, "/out/pdf", mount_flags("rw")))
 
         # publish
         # download RSA key
@@ -171,7 +175,7 @@ class DTCommand(DTCommandAbs):
         args = {
             "image": jb_image_name,
             "remove": True,
-            "volumes": volumes,
+            "mounts": mounts,
             "name": container_name,
             "envs": {
                 "DEBUG": "1",
