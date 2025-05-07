@@ -146,7 +146,7 @@ class DTCommand(DTCommandAbs):
 
         if publish_html:
             html_dir: str = os.path.join(project.path, "html")
-            html_mount = Mount("/out/html", html_dir, type="bind")
+            html_mount = Mount(target="/out/html", source=html_dir, type="bind")
             mounts.append(html_mount)
             # volumes.append((html_dir, "/out/html", mount_flags("rw")))
 
