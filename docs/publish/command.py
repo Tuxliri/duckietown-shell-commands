@@ -6,8 +6,6 @@ import re
 import sys
 from dt_data_api import DataClient
 
-from docker.types import Mount
-
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from typing import Tuple, List, Set
@@ -98,7 +96,6 @@ class DTCommand(DTCommandAbs):
         # variables
         registry_to_use = get_registry_to_use()
         debug = dtslogger.level <= logging.DEBUG
-        mounts: List[Mount] = []
 
         # artifacts location
         html_dir: str = os.path.join(project.path, "html")
@@ -142,17 +139,15 @@ class DTCommand(DTCommandAbs):
         publish_html: bool = os.path.exists(os.path.join(html_dir, "index.html"))
         publish_pdf: bool = os.path.exists(os.path.join(pdf_dir, "book.pdf"))
 
-        mount_flags = lambda f: ",".join([f] + (["cached"] if sys.platform == "darwin" else []))
+        cc_mountpoints: List[Tuple[str, str, str]] = []
 
         if publish_html:
             html_dir: str = os.path.join(project.path, "html")
-            html_mount = Mount(target="/out/html", source=html_dir, type="bind")
-            mounts.append(html_mount)
-            # volumes.append((html_dir, "/out/html", mount_flags("rw")))
+            cc_mountpoints.append((html_dir, "/out/html", "rw"))
 
-        # if publish_pdf:
-        #    pdf_dir: str = os.path.join(project.path, "pdf")
-        #    volumes.append((pdf_dir, "/out/pdf", mount_flags("rw")))
+        if publish_pdf:
+            pdf_dir: str = os.path.join(project.path, "pdf")
+            cc_mountpoints.append((pdf_dir, "/out/pdf", "rw"))
 
         # publish
         # download RSA key
@@ -169,15 +164,13 @@ class DTCommand(DTCommandAbs):
         handler.buffer.seek(0)
         rsa_key = handler.buffer.read().decode("utf-8")
 
-        print(mounts)
-
         # start the publish process
         dtslogger.info(f"Publishing project '{BOOK_NAME}'...")
         container_name: str = f"docs-publish-{BOOK_NAME}"
         args = {
             "image": jb_image_name,
             "remove": True,
-            #            "mounts": mounts,
+            "volumes": [f"{src}:{dst}:{mode}" for src, dst, mode in cc_mountpoints],
             "name": container_name,
             "envs": {
                 "DEBUG": "1",
@@ -190,7 +183,6 @@ class DTCommand(DTCommandAbs):
                 "BOOK_NAME": BOOK_NAME,
                 "DT_SUPERUSER": "1",
                 "BOOK_BRANCH_NAME": BOOK_BRANCH_NAME,
-                "--": "--mount type=bind, src=/home/duckie/user-data/workspace/CodeBook Build - ente - dt-ros-commons/html, dst=/out/html",
             },
             "stream": True,
         }
