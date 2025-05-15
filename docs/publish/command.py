@@ -170,7 +170,7 @@ class DTCommand(DTCommandAbs):
         args = {
             "image": jb_image_name,
             "remove": True,
-            "volumes": [f"{src}:{dst}:{mode}" for src, dst, mode in cc_mountpoints],
+            "volumes": cc_mountpoints,
             "name": container_name,
             "envs": {
                 "DEBUG": "1",
