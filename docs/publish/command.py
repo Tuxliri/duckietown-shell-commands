@@ -169,13 +169,15 @@ class DTCommand(DTCommandAbs):
         handler.buffer.seek(0)
         rsa_key = handler.buffer.read().decode("utf-8")
 
+        print(mounts)
+
         # start the publish process
         dtslogger.info(f"Publishing project '{BOOK_NAME}'...")
         container_name: str = f"docs-publish-{BOOK_NAME}"
         args = {
             "image": jb_image_name,
             "remove": True,
-            "mounts": mounts,
+            #            "mounts": mounts,
             "name": container_name,
             "envs": {
                 "DEBUG": "1",
