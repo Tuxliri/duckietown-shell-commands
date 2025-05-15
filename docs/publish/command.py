@@ -190,6 +190,7 @@ class DTCommand(DTCommandAbs):
                 "BOOK_NAME": BOOK_NAME,
                 "DT_SUPERUSER": "1",
                 "BOOK_BRANCH_NAME": BOOK_BRANCH_NAME,
+                "--": "--mount type=bind, src=/home/duckie/user-data/workspace/CodeBook Build - ente - dt-ros-commons/html, dst=/out/html",
             },
             "stream": True,
         }
