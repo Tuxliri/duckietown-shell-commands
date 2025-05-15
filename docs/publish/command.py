@@ -139,7 +139,7 @@ class DTCommand(DTCommandAbs):
         publish_html: bool = os.path.exists(os.path.join(html_dir, "index.html"))
         publish_pdf: bool = os.path.exists(os.path.join(pdf_dir, "book.pdf"))
 
-        cc_mountpoints: List[Tuple[str, str, str]] = []
+        cc_mountpoints = []
 
         if publish_html:
             html_dir: str = os.path.join(project.path, "html")
