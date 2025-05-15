@@ -150,6 +150,12 @@ class DTCommand(DTCommandAbs):
             type=float,
             help="Mouse sensitivity"
         )
+        parser.add_argument(
+            "--tutorial",
+            default=False,
+            action="store_true",
+            help="Enable tutorial"
+        )
         parsed, _ = parser.parse_known_args(args=args)
         return parsed
 
@@ -236,7 +242,10 @@ class DTCommand(DTCommandAbs):
             # mouse sensitivity
             if parsed.mouse_sensitivity is not None:
                 app_config += ["--mouse-sensitivity", str(parsed.mouse_sensitivity)]
-            # token)
+            # tutorial
+            if parsed.tutorial:
+                app_config += ["--tutorial"]
+            # token
             app_config += ["--token", shell.profile.secrets.dt_token]
             # ---
             dtslogger.info("Renderer configured!")
