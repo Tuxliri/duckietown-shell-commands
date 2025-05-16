@@ -28,7 +28,7 @@ DCSS_RSA_SECRET_SPACE = "private"
 SSH_USERNAME = "duckie"
 SAFE_BRANCH_REGEX = re.compile("^[a-z]+-staging$")
 # we need the server path since docker in docker - todo automate this
-SERVER_PATH = "/home/shared/dt-davinci-deployment/ci.duckietown.com/user-data/jobs"
+SERVER_PATH = "/home/shared/dt-davinci-deployment/ci.duckietown.com/user-data/workspace"
 
 SUPPORTED_PROJECT_TYPES = {
     "template-book": {
