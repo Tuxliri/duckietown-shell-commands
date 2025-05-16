@@ -100,6 +100,9 @@ class DTCommand(DTCommandAbs):
         registry_to_use = get_registry_to_use()
         debug = dtslogger.level <= logging.DEBUG
 
+        local_html_dir: str = os.path.join(project.path, "html")
+        local_pdf_dir: str = os.path.join(project.path, "pdf")
+
         # if we are running on jenkins it is a docker in docker setup
         # so the result is that we need to mount the directory on the host.
         if parsed.ci:
@@ -112,8 +115,8 @@ class DTCommand(DTCommandAbs):
 
         else:
             # artifacts location
-            html_dir: str = os.path.join(project.path, "html")
-            pdf_dir: str = os.path.join(project.path, "pdf")
+            html_dir = local_html_dir
+            pdf_dir = local_pdf_dir
 
         dns = parsed.destination
         # book-specific parameters
@@ -150,17 +153,15 @@ class DTCommand(DTCommandAbs):
         dtslogger.debug(f"Using JupyterBook image '{jb_image_name}'")
 
         # check which artifacts need to be published
-        publish_html: bool = os.path.exists(os.path.join(html_dir, "index.html"))
-        publish_pdf: bool = os.path.exists(os.path.join(pdf_dir, "book.pdf"))
+        publish_html: bool = os.path.exists(os.path.join(local_html_dir, "index.html"))
+        publish_pdf: bool = os.path.exists(os.path.join(local_pdf_dir, "book.pdf"))
 
         cc_mountpoints = []
 
         if publish_html:
-            html_dir: str = os.path.join(project.path, "html")
             cc_mountpoints.append((html_dir, "/out/html", "rw"))
 
         if publish_pdf:
-            pdf_dir: str = os.path.join(project.path, "pdf")
             cc_mountpoints.append((pdf_dir, "/out/pdf", "rw"))
 
         # publish
