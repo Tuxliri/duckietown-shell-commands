@@ -27,6 +27,8 @@ DCSS_RSA_SECRET_LOCATION = "secrets/rsa/ssh-{dns}/id_rsa"
 DCSS_RSA_SECRET_SPACE = "private"
 SSH_USERNAME = "duckie"
 SAFE_BRANCH_REGEX = re.compile("^[a-z]+-staging$")
+# we need the server path since docker in docker - todo automate this
+SERVER_PATH = "/home/shared/dt-davinci-deployment/ci.duckietown.com/user-data/jobs"
 
 SUPPORTED_PROJECT_TYPES = {
     "template-book": {
@@ -65,6 +67,7 @@ class DTCommand(DTCommandAbs):
             nargs=1,
             help="Destination hostname of the website to publish, e.g., 'docs.duckietown.com'",
         )
+        parser.add_argument("--ci", default=False, action="store_true", help="Are we running on jenkins?")
 
         # get pre-parsed or parse arguments
         parsed = kwargs.get("parsed", None)
@@ -97,9 +100,20 @@ class DTCommand(DTCommandAbs):
         registry_to_use = get_registry_to_use()
         debug = dtslogger.level <= logging.DEBUG
 
-        # artifacts location
-        html_dir: str = os.path.join(project.path, "html")
-        pdf_dir: str = os.path.join(project.path, "pdf")
+        # if we are running on jenkins it is a docker in docker setup
+        # so the result is that we need to mount the directory on the host.
+        if parsed.ci:
+            project_path = project.path
+            path_list = project_path.split("/")
+            folder_name = path_list[-1]
+            html_dir = os.path.join(SERVER_PATH, folder_name, "html")
+            pdf_dir = os.path.join(SERVER_PATH, folder_name, "pdf")
+            print("SERVER HTML DIR:" + html_dir)
+
+        else:
+            # artifacts location
+            html_dir: str = os.path.join(project.path, "html")
+            pdf_dir: str = os.path.join(project.path, "pdf")
 
         dns = parsed.destination
         # book-specific parameters
