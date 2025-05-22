@@ -176,6 +176,8 @@ duckiebot:
       description: Run a demo on a DT robot
     dtps:
       description: Open the DT Postal Service (DTPS) topic list for a DT robot
+    hut_upgrade:
+      description: Upgrade the firmware for a DT robot HUT
     image_viewer: &duckiebot_image_viewer
       description: Run the image viewer for a DT robot
     image_view: *duckiebot_image_viewer
