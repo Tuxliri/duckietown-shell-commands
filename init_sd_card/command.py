@@ -40,6 +40,8 @@ from .constants import (
     NETPLAN_WPA_PSK_NETWORK_CONFIG,
 )
 
+from disk_image.create.jetson_nano.private_command import DISK_IMAGE_VERSION as jetson_disk_image_version
+
 INIT_SD_CARD_VERSION = "2.1.0"  # incremental number, semantic version
 
 Wifi = namedtuple("Wifi", "name ssid psk username password")
@@ -60,7 +62,7 @@ def DISK_IMAGE_VERSION(robot_configuration, experimental=False):
     board_to_disk_image_version = {
         "raspberry_pi": {"stable": "1.2.1", "experimental": "1.2.1"},
         "raspberry_pi_64": {"stable": "4.0.0", "experimental": "4.0.0"},
-        "jetson_nano_4gb": {"stable": "1.4.3", "experimental": "1.4.3"},
+        "jetson_nano_4gb": {"stable": jetson_disk_image_version, "experimental": "1.4.3"},
         "jetson_nano_2gb": {"stable": "1.2.2", "experimental": "1.2.2"},
     }
     board, _ = get_robot_hardware(robot_configuration)
@@ -84,7 +86,7 @@ def PLACEHOLDERS_VERSION(robot_configuration, experimental=False):
         },
         "jetson_nano_4gb": {
             # - stable
-            "1.4.3": "1.1",
+            jetson_disk_image_version : "1.1",
             # - experimental
             "-----": "1.1",
         },
