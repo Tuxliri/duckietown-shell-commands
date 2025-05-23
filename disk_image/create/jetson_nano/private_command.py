@@ -27,7 +27,6 @@ from disk_image.create.constants import (
     MODULES_TO_LOAD,
     DATA_STORAGE_DISK_IMAGE_DIR,
     AUTOBOOT_STACKS_DIR,
-    DEFAULT_STACK,
 )
 
 from disk_image.create.utils import (
@@ -83,7 +82,10 @@ TEMPLATE_FILE_VALIDATOR = {
 COMMAND_DIR = os.path.dirname(os.path.abspath(__file__))
 DISK_TEMPLATE_DIR = os.path.join(COMMAND_DIR, "disk_template")
 NVIDIA_LICENSE_FILE = os.path.join(COMMAND_DIR, "nvidia-license.txt")
-STACKS_DIR = os.path.join(COMMAND_DIR, "..", "..", "..", "stack", "stacks", DEFAULT_STACK)
+
+STACKS = ["robot/basics", "duckietown/duckiebot", "ros1/duckiebot"]
+STACKS_BASE_DIR = os.path.join(COMMAND_DIR, "..", "..", "..", "stack", "stacks")
+
 SUPPORTED_STEPS = [
     "license",
     "download",
@@ -755,20 +757,17 @@ class DTCommand(DTCommandAbs):
                             run_cmd(["sudo", "mkdir", "-p", update["destination"]])
                         # copy stacks (APP only)
                         if partition == ROOT_PARTITION:
-                            for stack in list_files(STACKS_DIR, "yaml"):
-                                origin = os.path.join(STACKS_DIR, stack)
+                            abs_stacks_base = os.path.abspath(STACKS_BASE_DIR)
+                            for stack in STACKS:
+                                origin = os.path.join(abs_stacks_base, stack + ".yaml")
                                 destination = os.path.join(
-                                    PARTITION_MOUNTPOINT(partition), AUTOBOOT_STACKS_DIR.lstrip("/"), stack
+                                    PARTITION_MOUNTPOINT(partition), AUTOBOOT_STACKS_DIR.lstrip("/"), stack + '.yaml'
                                 )
                                 relative = os.path.join(AUTOBOOT_STACKS_DIR, stack)
-                                # validate file
-                                validator = _get_validator_fcn(partition, relative)
-                                if validator:
-                                    dtslogger.debug(f"Validating file {relative}...")
-                                    validator(shell, origin, relative, arch=DEVICE_ARCH)
                                 # create or modify file
                                 effect = "MODIFY" if os.path.exists(destination) else "NEW"
                                 dtslogger.info(f"- Updating file ({effect}) [{relative}]")
+                                run_cmd(["sudo", "mkdir", "-p", os.path.dirname(destination)])
                                 # copy new file
                                 run_cmd(["sudo", "cp", origin, destination])
                                 # add architecture as default value in the stack file
