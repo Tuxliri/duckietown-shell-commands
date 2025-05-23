@@ -205,6 +205,12 @@ class DTCommand(DTCommandAbs):
             type=str,
             help="(Optional) temporary working directory to use"
         )
+        parser.add_argument(
+            "--image",
+            default=None,
+            help="Path to a local .img file to use instead of downloading.",
+        )
+
         # parse arguments
         parsed = parser.parse_args(args=args)
 
@@ -408,6 +414,18 @@ def step_license(_, parsed, __):
 
 
 def step_download(shell, parsed, data):
+    # use local image if specified
+    if parsed.image:
+        dtslogger.info(f"Using provided local disk image: {parsed.image}")
+        if not os.path.isfile(parsed.image):
+            dtslogger.error(f"The specified image file does not exist: {parsed.image}")
+            exit(3)
+        # create temp dir if it doesn't exist
+        _run_cmd(["mkdir", "-p", parsed.workdir])
+        # copy .img to expected location
+        shutil.copy(parsed.image, data["disk_img"])
+        return {}
+
     # check if dependencies are met
     ensure_command_is_installed("unzip")
 
@@ -572,6 +590,9 @@ def step_verify(_, parsed, data):
     # compare bytes
     try:
         with open(data["disk_img"], "rb") as origin:
+            # Check that parsed.device is not None
+            if parsed.device is None:
+                dtslogger.error("Destination device is None. If you're skipping the flash step, please provide a device using the --device flag.")
             with sudo_open(parsed.device, "rb") as destination:
                 buffer1 = origin.read(buf_size)
                 while buffer1:
