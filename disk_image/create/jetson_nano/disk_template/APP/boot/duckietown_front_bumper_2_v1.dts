@@ -4,8 +4,7 @@
 / {
     overlay-name = "Duckietown Front Bumper 2 V1";
     jetson-header-name = "Jetson 40pin Header";
-    compatible = "nvidia,p3542-0000+p3448-0003nvidia", "nvidia,p3449-0000-a02+p3448-0000-a02", "nvidia,p3449-0000-b00+p3448-0000-b00", "nvidia,p3449-0000-b00+p3448-0002-b00",;
-
+    compatible = "nvidia,p3542-0000+p3448-0003nvidia", "nvidia,p3449-0000-a02+p3448-0000-a02", "nvidia,p3449-0000-b00+p3448-0000-b00", "nvidia,p3449-0000-b00+p3448-0002-b00";
     fragment@0 {
         target-path = "/i2c@7000c400";
 
