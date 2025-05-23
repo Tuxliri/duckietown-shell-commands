@@ -227,7 +227,7 @@ class DTCommand(DTCommandAbs):
             parsed.output, "cache", out_file_name(ex) + f".{step}"
         )
         # get version
-        distro: str = shell.profile.distro.name
+        distro = shell.profile.distro.name
         # create a virtual SD card object
         sd_card = VirtualSDCard(out_file_path("img"), DISK_IMAGE_PARTITION_TABLE)
         # this is the surgey plan that will be performed by the init_sd_card command
@@ -247,7 +247,7 @@ class DTCommand(DTCommandAbs):
                 "hostname": socket.gethostname(),
                 "user": getpass.getuser(),
                 "shell_version": shell_version,
-                "commands_version": shell.profile.distro.branch,
+                "commands_version": shell.get_commands_version(),
             },
             "modules": [
                 DOCKER_IMAGE_TEMPLATE(
@@ -931,7 +931,7 @@ class DTCommand(DTCommandAbs):
                     file=[out_file_path("zip")],
                     object=[os.path.join(DATA_STORAGE_DISK_IMAGE_DIR, out_file_name("zip"))],
                     space="public",
-                    token=shell.profile.secrets.dt_token,
+                    token=shell.get_dt1_token(),
                 ),
             )
             dtslogger.info("Done!")
