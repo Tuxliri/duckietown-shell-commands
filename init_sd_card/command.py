@@ -242,7 +242,7 @@ class DTCommand(DTCommandAbs):
             parsed.robot_type = values["type"]
             parsed.robot_configuration = values[f"{parsed.robot_type}_configuration"]
             parsed.wifi = ",".join([f"{w['ssid']}:{w['wpa']}".strip(":") for w in values.get("wifi", [])])
-            parsed.experimental = values.get("experimental", False)
+            parsed.experimental = values["experimental"] == "true"
             parsed.size = int(values["size"])
             # the form includes all licenses
             if "license" in steps:
