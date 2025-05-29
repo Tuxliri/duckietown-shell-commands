@@ -78,7 +78,6 @@ INPUT_DISK_IMAGE_URL = (
     f"disk_image/disk_template/{JETPACK_DISK_IMAGE_NAME(v)}.zip"
 )
 TEMPLATE_FILE_VALIDATOR = {
-    "APP:/data/autoboot/*.yaml": lambda *a, **kwa: validator_autoboot_stack(*a, **kwa),
     "APP:/data/config/calibrations/*/default.yaml": lambda *a, **kwa: validator_yaml_syntax(*a, **kwa),
 }
 COMMAND_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -762,11 +761,6 @@ class DTCommand(DTCommandAbs):
                                     PARTITION_MOUNTPOINT(partition), AUTOBOOT_STACKS_DIR.lstrip("/"), stack
                                 )
                                 relative = os.path.join(AUTOBOOT_STACKS_DIR, stack)
-                                # validate file
-                                validator = _get_validator_fcn(partition, relative)
-                                if validator:
-                                    dtslogger.debug(f"Validating file {relative}...")
-                                    validator(shell, origin, relative, arch=DEVICE_ARCH)
                                 # create or modify file
                                 effect = "MODIFY" if os.path.exists(destination) else "NEW"
                                 dtslogger.info(f"- Updating file ({effect}) [{relative}]")
