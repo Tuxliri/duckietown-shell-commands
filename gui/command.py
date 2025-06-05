@@ -18,7 +18,7 @@ from utils.docker_utils import (
     get_registry_to_use,
     get_client_OLD,
 )
-
+from utils.duckietown_utils import get_distro
 from utils.git_utils import get_last_commit
 from utils.misc_utils import sanitize_hostname
 from utils.networking_utils import get_duckiebot_ip
@@ -55,12 +55,11 @@ class DTCommand(DTCommandAbs):
         client = get_client_OLD()
         if parsed.image is None:
             registry: str = get_registry_to_use()
-            # TODO: remove hardcoded distro, though VNC does not work on ente
-            distro: str = "daffy"
+            distro: str = get_distro(shell).branch
             image = DEFAULT_IMAGE_FMT.format(registry, distro, arch)
         else:
             image = parsed.image
-
+        print(image)
         # pull image
         if parsed.pull:
             pull_image_OLD(image, client)
