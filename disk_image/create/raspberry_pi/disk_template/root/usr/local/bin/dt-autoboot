@@ -17,7 +17,6 @@ for BOOT_STACK in "${BOOT_STACKS[@]}"; do
     set -e
     docker-compose \
         --host "${DOCKER_SOCKET}" \
-        --project-name "duckietown" \
         --file "${BOOT_STACK}" \
         up \
             -d
