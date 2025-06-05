@@ -2,7 +2,6 @@
 
 set -x
 
-SD_DEVICE=/dev/mmcblk0
 ROOT_PART_ID=1
 CONFIG_DIR=/data/config
 EVENTS_DIR=/data/stats/events
@@ -12,6 +11,20 @@ ROBOT_HARDWARE_FILE=${CONFIG_DIR}/robot_hardware
 # Nvidia Jetson-based duckiebots need the GPIO pin #29 (aka sysfs gpio149) to be set to HIGH to keep the DTHut alive
 HUT_RESET_SYSFS_PIN_NO=149
 
+# Identify the SD_DEVICE based on the hardware
+if [[ -e /dev/mmcblk0 && -e /dev/mmcblk1 ]]; then
+    echo "Both /dev/mmcblk0 and /dev/mmcblk1 are present, Waveshare Jetson Nano identified"
+    SD_DEVICE=/dev/mmcblk1
+elif [[ -e /dev/mmcblk0 && -e /dev/sda1 ]]; then
+    echo "/dev/mmcblk0 and /dev/sda1 are present, Blue Jetson Nano identified"
+    SD_DEVICE=/dev/sda1
+elif [[ -e /dev/mmcblk0 && ! -e /dev/mmcblk1 && ! -e /dev/sda1 ]]; then
+    echo "Only /dev/mmcblk0 is present, Original Jetson Nano identified"
+    SD_DEVICE=/dev/mmcblk0
+else
+    echo "Unexpected disk configuration, defaulting to /dev/mmcblk0"
+    SD_DEVICE=/dev/mmcblk0
+fi
 
 setup_etc_hosts() {
     cat >/etc/hosts <<EOL
