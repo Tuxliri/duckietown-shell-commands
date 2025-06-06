@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from typing import List, Optional
 
+from disk_image.create.steps import step_docker
 from dt_shell import DTCommandAbs, dtslogger, DTShell, __version__ as shell_version
 
 import argparse
@@ -97,6 +98,8 @@ TEMPLATE_FILE_VALIDATOR = {
 COMMAND_DIR = os.path.dirname(os.path.abspath(__file__))
 DISK_TEMPLATE_DIR = os.path.join(COMMAND_DIR, "disk_template")
 STACKS_DIR = os.path.join(COMMAND_DIR, "..", "..", "..", "stack", "stacks", DEFAULT_STACK)
+STACKS_BASE_DIR = os.path.join(COMMAND_DIR, "..", "..", "..", "stack", "stacks")
+STACKS = ["robot/basics",]
 SUPPORTED_STEPS: List[Optional[str]] = [
     "download",
     "create",
@@ -604,84 +607,24 @@ class DTCommand(DTCommandAbs):
             dtslogger.info("Step END: upgrade\n")
         # Step: upgrade
         # <------
-        #
-        # ------>
-        # Step: docker
+
+        
         if "docker" in parsed.steps:
             dtslogger.info("Step BEGIN: docker")
-            # from this point on, if anything weird happens, unmount the disk
-            try:
-                # make sure that the disk is mounted
-                if not sd_card.is_mounted():
-                    dtslogger.error(f"The disk {out_file_path('img')} is not mounted.")
-                    return
-                # check if the corresponding disk device exists
-                partition_disk = sd_card.partition_device(ROOT_PARTITION)
-                if not os.path.exists(partition_disk):
-                    raise ValueError(f"Disk device {partition_disk} not found")
-                # mount device
-                sd_card.mount_partition(ROOT_PARTITION)
-                # get local docker client
-                local_docker = docker.from_env()
-                # pull dind image
-                pull_docker_image(local_docker, "docker:20.10.5-dind")
-                # run auxiliary Docker engine
-                remote_docker_dir = os.path.join(PARTITION_MOUNTPOINT(ROOT_PARTITION), "var", "lib", "docker")
-                remote_docker_engine_container = local_docker.containers.run(
-                    image="docker:20.10.5-dind",
-                    detach=True,
-                    remove=True,
-                    auto_remove=True,
-                    publish_all_ports=True,
-                    privileged=True,
-                    name="dts-disk-image-aux-docker",
-                    volumes={remote_docker_dir: {"bind": "/var/lib/docker", "mode": "rw"}},
-                    entrypoint=["dockerd", "--host=tcp://0.0.0.0:2375", "--bridge=none"],
-                )
-                dtslogger.info("Waiting 20 seconds for DIND to start...")
-                time.sleep(20)
-                # get IP address of the container
-                container_info = local_docker.api.inspect_container("dts-disk-image-aux-docker")
-                container_ip = container_info["NetworkSettings"]["IPAddress"]
-                # create remote docker client
-                endpoint_url = f"tcp://{container_ip}:2375"
-                dtslogger.info(f"DIND should now be up, using endpoint URL `{endpoint_url}`.")
-                remote_docker = docker.DockerClient(base_url=endpoint_url)
-                # from this point on, if anything weird happens, stop container and unmount disk
-                try:
-                    dtslogger.info("Transferring Docker images...")
-                    # pull images inside the disk image
-                    for module in MODULES_TO_LOAD:
-                        image = DOCKER_IMAGE_TEMPLATE(
-                            owner=module["owner"],
-                            module=module["module"],
-                            version=distro,
-                            tag=module["tag"] if "tag" in module else None,
-                            arch=DEVICE_ARCH,
-                        )
-                        pull_docker_image(remote_docker, image, platform="linux/arm64")
-                    # ---
-                    dtslogger.info("Docker images successfully transferred!")
-                except Exception as e:
-                    # unmount disk
-                    sd_card.umount()
-                    raise e
-                finally:
-                    # stop container
-                    remote_docker_engine_container.stop()
-                    # unmount partition
-                    sd_card.umount_partition(ROOT_PARTITION)
-                # ---
-            except Exception as e:
-                # unmount disk
-                sd_card.umount()
-                raise e
-            # ---
-            cache_step("docker")
+            # Delegate the entire Docker‐in‐Disk‐Image logic to step_docker(…)
+            step_docker(
+                sd_card=sd_card,
+                out_file_path=out_file_path,
+                ROOT_PARTITION=ROOT_PARTITION,
+                STACKS=STACKS,
+                STACKS_BASE_DIR=STACKS_BASE_DIR,
+                DEVICE_PLATFORM="linux/arm64",
+                DIND_IMAGE_NAME="docker:20.10.5-dind",
+                cache_step_fn=cache_step,
+                architecture="arm64v8",
+            )
             dtslogger.info("Step END: docker\n")
-        # Step: docker
-        # <------
-        #
+            
         # ------>
         # Step: setup
         if "setup" in parsed.steps:

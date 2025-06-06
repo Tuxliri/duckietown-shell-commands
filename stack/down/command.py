@@ -87,7 +87,7 @@ class DTCommand(DTCommandAbs):
         # run docker compose stack
         H = f"{hostname}:{DEFAULT_DOCKER_TCP_PORT}"
         start_command_in_subprocess(
-            ["docker", f"-H={H}", "compose", "--project-name", project_name, "--file", stack_file,
+            ["docker", f"-H={H}", "compose", "--file", stack_file,
              "down", "--remove-orphans"],
             env=env,
         )
