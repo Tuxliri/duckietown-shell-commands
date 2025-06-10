@@ -1,4 +1,5 @@
 import webbrowser
+
 from dt_shell import DTCommandAbs, DTShell
 
 
@@ -10,4 +11,7 @@ class DTCommand(DTCommandAbs):
         parsed = kwargs.get("parsed", None)
         if parsed is None:
             parsed = DTCommand.parser.parse_args(args)
-        webbrowser.open(f"http://{parsed.robot}.local:11511/")
+        topic = parsed.topic.strip("/") if parsed.topic else ""
+        if topic:
+            topic += "/"
+        webbrowser.open(f"http://{parsed.robot}.local:11511/{topic}")

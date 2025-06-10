@@ -1,7 +1,9 @@
 import argparse
+from typing import List, Optional
+
 from dt_shell.commands import DTCommandConfigurationAbs
 from dt_shell.environments import ShellCommandEnvironmentAbs
-from typing import Optional, List
+
 
 class DTCommandConfiguration(DTCommandConfigurationAbs):
     @classmethod
@@ -24,6 +26,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
         The parser this command will use.
         """
         parser = argparse.ArgumentParser("dts duckiebot dtps")
+        parser.add_argument(
+            "--topic",
+            default=None,
+            type=str,
+            help="DTPS topic"
+        )
         parser.add_argument(
             "robot",
             help="Name of the robot to connect to"
