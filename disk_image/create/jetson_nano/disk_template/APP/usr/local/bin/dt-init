@@ -15,15 +15,19 @@ HUT_RESET_SYSFS_PIN_NO=149
 if [[ -e /dev/mmcblk0 && -e /dev/mmcblk1 ]]; then
     echo "Both /dev/mmcblk0 and /dev/mmcblk1 are present, Waveshare Jetson Nano identified"
     SD_DEVICE=/dev/mmcblk1
-elif [[ -e /dev/mmcblk0 && -e /dev/sda1 ]]; then
-    echo "/dev/mmcblk0 and /dev/sda1 are present, Blue Jetson Nano identified"
-    SD_DEVICE=/dev/sda1
-elif [[ -e /dev/mmcblk0 && ! -e /dev/mmcblk1 && ! -e /dev/sda1 ]]; then
+    PARTITION=${SD_DEVICE}p${ROOT_PART_ID}
+elif [[ -e /dev/mmcblk0 && -e /dev/sda ]]; then
+    echo "/dev/mmcblk0 and /dev/sda are present, Blue Jetson Nano identified"
+    SD_DEVICE=/dev/sda
+    PARTITION=${SD_DEVICE}${ROOT_PART_ID}
+elif [[ -e /dev/mmcblk0 && ! -e /dev/mmcblk1 && ! -e /dev/sda ]]; then
     echo "Only /dev/mmcblk0 is present, Original Jetson Nano identified"
     SD_DEVICE=/dev/mmcblk0
+    PARTITION=${SD_DEVICE}p${ROOT_PART_ID}
 else
     echo "Unexpected disk configuration, defaulting to /dev/mmcblk0"
     SD_DEVICE=/dev/mmcblk0
+    PARTITION=${SD_DEVICE}p${ROOT_PART_ID}
 fi
 
 setup_etc_hosts() {
@@ -60,8 +64,8 @@ run_on_first_boot() {
     # resize root partition
     sgdisk --move-second-header ${SD_DEVICE}
     growpart ${SD_DEVICE} ${ROOT_PART_ID}
-    resize2fs ${SD_DEVICE}p${ROOT_PART_ID}
-    partprobe
+    resize2fs ${PARTITION}
+    partprobe ${SD_DEVICE}
 
     # sanitize files
     dt-sanitize-files
