@@ -228,6 +228,12 @@ class DTCommand(DTCommandAbs):
             dest="disk_image_version",
             default=None,
             help="Override the default disk image version to use"
+        )        
+        parser.add_argument(
+            "--placeholders-version",
+            dest="placeholders_version",
+            default=None,
+            help="Override the default placeholders version to use"
         )
         # parse arguments
         parsed = parser.parse_args(args=args)
@@ -683,7 +689,10 @@ def step_setup(shell: DTShell, parsed: argparse.Namespace, data: dict):
     sanitize = map(lambda s: s["path"], filter(lambda s: s["partition"] in ROOT_PARTITIONS, surgery_plan))
     surgery_data["sanitize_files"] = "\n".join(map(lambda f: f'dt-sanitize-file "{f}"', sanitize))
     # get disk image placeholders
-    placeholders_version = PLACEHOLDERS_VERSION(parsed.robot_configuration, parsed.experimental, version_override=getattr(parsed, "disk_image_version", None))
+    if parsed.placeholders_version is not None:
+        placeholders_version = parsed.placeholders_version
+    else:
+        placeholders_version = PLACEHOLDERS_VERSION(parsed.robot_configuration, parsed.experimental, version_override=getattr(parsed, "disk_image_version", None))
     placeholders_dir = os.path.join(COMMAND_DIR, "placeholders", "v" + placeholders_version)
     # perform surgery
     dtslogger.info("Performing surgery on the SD card...")
