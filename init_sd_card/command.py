@@ -96,9 +96,20 @@ def PLACEHOLDERS_VERSION(robot_configuration, experimental=False, version_overri
             "-----": "1.1",
         },
     }
+
     board, _ = get_robot_hardware(robot_configuration)
     version = DISK_IMAGE_VERSION(robot_configuration, experimental, version_override)
-    return board_to_placeholders_version[board][version]
+
+    board_versions = board_to_placeholders_version.get(board, {})
+    placeholder_version = board_versions.get(version)
+
+    if placeholder_version is None:
+        dtslogger.warning(
+            f"Unknown disk image version '{version}' for board '{board}', defaulting to placeholder version 1.1."
+        )
+        placeholder_version = "1.1"  # or raise an error if strict matching is required
+
+    return placeholder_version
 
 
 def BASE_DISK_IMAGE(robot_configuration, experimental=False, version_override=None):
@@ -204,6 +215,12 @@ class DTCommand(DTCommandAbs):
             dest="disk_image_version",
             default=None,
             help="Override the default disk image version to use"
+        )        
+        parser.add_argument(
+            "--placeholders-version",
+            dest="placeholders_version",
+            default=None,
+            help="Override the default placeholders version to use"
         )
         # parse arguments
         parsed = parser.parse_args(args=args)
@@ -667,7 +684,10 @@ def step_setup(shell, parsed, data):
     sanitize = map(lambda s: s["path"], filter(lambda s: s["partition"] in ROOT_PARTITIONS, surgery_plan))
     surgery_data["sanitize_files"] = "\n".join(map(lambda f: f'dt-sanitize-file "{f}"', sanitize))
     # get disk image placeholders
-    placeholders_version = PLACEHOLDERS_VERSION(parsed.robot_configuration, parsed.experimental, version_override=getattr(parsed, "disk_image_version", None))
+    if parsed.placeholders_version is not None:
+        placeholders_version = parsed.placeholders_version
+    else:
+        placeholders_version = PLACEHOLDERS_VERSION(parsed.robot_configuration, parsed.experimental, version_override=getattr(parsed, "disk_image_version", None))
     placeholders_dir = os.path.join(COMMAND_DIR, "placeholders", "v" + placeholders_version)
     # perform surgery
     dtslogger.info("Performing surgery on the SD card...")
