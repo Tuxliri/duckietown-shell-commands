@@ -97,9 +97,20 @@ def PLACEHOLDERS_VERSION(robot_configuration, experimental=False, version_overri
             "-----": "1.1",
         },
     }
+
     board, _ = get_robot_hardware(robot_configuration)
     version = DISK_IMAGE_VERSION(robot_configuration, experimental, version_override)
-    return board_to_placeholders_version[board][version]
+
+    board_versions = board_to_placeholders_version.get(board, {})
+    placeholder_version = board_versions.get(version)
+
+    if placeholder_version is None:
+        dtslogger.warning(
+            f"Unknown disk image version '{version}' for board '{board}', using default placeholder version."
+        )
+        placeholder_version = "1.1"  # or raise an error if strict matching is required
+
+    return placeholder_version
 
 
 def BASE_DISK_IMAGE(robot_configuration, experimental=False, version_override=None):
