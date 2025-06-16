@@ -105,7 +105,7 @@ def PLACEHOLDERS_VERSION(robot_configuration, experimental=False, version_overri
 
     if placeholder_version is None:
         dtslogger.warning(
-            f"Unknown disk image version '{version}' for board '{board}', using default placeholder version."
+            f"Unknown disk image version '{version}' for board '{board}', defaulting to placeholder version 1.1."
         )
         placeholder_version = "1.1"  # or raise an error if strict matching is required
 
