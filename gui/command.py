@@ -7,6 +7,7 @@ from datetime import datetime
 import docker
 
 import pytz
+import webbrowser
 from dt_shell import DTCommandAbs, DTShell, dtslogger
 
 from utils.cli_utils import start_command_in_subprocess
@@ -187,7 +188,8 @@ class DTCommand(DTCommandAbs):
 
         # print some info
         if parsed.vnc:
-            dtslogger.info("Running novnc. Navigate to http://localhost:8087/ in your browser. ")
+            dtslogger.info("Running noVNC...")
+            webbrowser.open("http://localhost:8087/")
         dtslogger.debug(
             f"Running container with configuration:\n\n" f"{json.dumps(params, sort_keys=True, indent=4)}\n"
         )
