@@ -96,7 +96,6 @@ class DTCommand(DTCommandAbs):
                 space=DCSS_SPACE_NAME,
             )
         )
-        dtslogger.info("Download completed.")
         # install
         dtslogger.info("Installing...")
         subprocess.check_call(["unzip", f"v{latest}.zip"], cwd=app_dir)
@@ -105,13 +104,6 @@ class DTCommand(DTCommandAbs):
         os.remove(zip_local)
         # ---
         dtslogger.info("Installation completed successfully!")
-        dtslogger.info("""
-
-        You can now run the Duckiematrix application using the command:
-
-            >   dts matrix run --standalone --sandbox
-
-        """)
 
     @staticmethod
     def complete(shell, word, line):
