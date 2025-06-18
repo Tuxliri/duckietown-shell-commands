@@ -297,6 +297,8 @@ matrix:
       subcommands:
         release:
           description: Create a new release of the DM and push it to the DCSS
+    dtps:
+      description: Open the DT Postal Service (DTPS) topic list for the DM
     engine:
       description: DM engine commands
       subcommands:
