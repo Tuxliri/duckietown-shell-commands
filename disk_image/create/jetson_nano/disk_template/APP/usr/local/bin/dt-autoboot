@@ -15,7 +15,7 @@ for BOOT_STACK in "${BOOT_STACKS[@]}"; do
   if [ -f "${BOOT_STACK}" ]; then
     echo "Launching 'duckietown' stack ${BOOT_STACK}..."
     set -e
-    docker-compose \
+    ARCH=arm64v8 REGISTRY=docker.io docker-compose \
         --host "${DOCKER_SOCKET}" \
         --project-name "duckietown" \
         --file "${BOOT_STACK}" \
