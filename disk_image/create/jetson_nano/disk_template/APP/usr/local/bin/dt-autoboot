@@ -15,8 +15,7 @@ for BOOT_STACK in "${BOOT_STACKS[@]}"; do
   if [ -f "${BOOT_STACK}" ]; then
     PROJECT_NAME=$(basename "$(dirname "${BOOT_STACK}")")
     echo "Launching stack: ${BOOT_STACK} (project: ${PROJECT_NAME})"
-    ARCH=arm64v8 REGISTRY=docker.io docker-compose \
-        --host "${DOCKER_SOCKET}" \
+    ARCH=arm64v8 REGISTRY=docker.io docker --host "${DOCKER_SOCKET}" compose \
         --file "${BOOT_STACK}" \
         up -d
     echo "Stack ${PROJECT_NAME} launched from ${BOOT_STACK}"

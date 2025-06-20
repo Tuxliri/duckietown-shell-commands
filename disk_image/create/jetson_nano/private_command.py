@@ -104,7 +104,6 @@ APT_PACKAGES_TO_INSTALL = [
     "rsync",
     "nano",
     "htop",
-    "docker-compose",
     # provides the command `growpart`, used to resize the root partition at first boot
     "cloud-guest-utils",
     # provides the command `inotifywait`, used to monitor inode events on trigger sockets
@@ -113,7 +112,9 @@ APT_PACKAGES_TO_INSTALL = [
     # TODO: no releases contain this
     "gnupg2",
     "pass",
-    "nvidia-container-runtime"
+    "nvidia-container-runtime",
+    "curl",
+    "apt-transport-https"
 ]
 APT_PACKAGES_TO_HOLD = [
     # list here packages that cannot be updated through `chroot`
@@ -608,6 +609,21 @@ class DTCommand(DTCommandAbs):
                             ROOT_PARTITION,
                             f"apt autoremove --yes",
                         )
+                        
+                        run_cmd_in_partition(
+                            ROOT_PARTITION,
+                            "curl -fsSL https://download.docker.com/linux/ubuntu/gpg  | sudo gpg " + 
+                            " --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+                        )
+                        
+                        run_cmd_in_partition(
+                            ROOT_PARTITION,
+                            """echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+                        https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+                        | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"""
+                        )
+
+
                     except Exception as e:
                         raise e
                     # unomunt bind /dev
