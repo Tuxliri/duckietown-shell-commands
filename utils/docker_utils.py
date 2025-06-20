@@ -686,7 +686,7 @@ def build_logs_to_string(build_logs):
 
 logger = dtslogger
 
-escape = re.compile("\x1b\[[\d;]*?m")
+escape = re.compile(r"\x1b\[[\d;]*?m")
 
 
 def remove_escapes(s):
