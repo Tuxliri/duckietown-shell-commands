@@ -121,7 +121,7 @@ class MultiCommand(object):
     @staticmethod
     def _parse_values(arg_value: str) -> List[Any]:
         arg_value = str(arg_value)
-        match = re.match("^.*{([^}]+)}.*$", arg_value)
+        match = re.match(r"^.*{([^}]+)}.*$", arg_value)
         if not match:
             return [arg_value]
         s, f = arg_value.index("{"), arg_value.index("}") + 1

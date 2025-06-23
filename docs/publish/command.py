@@ -26,7 +26,7 @@ except ImportError:
 DCSS_RSA_SECRET_LOCATION = "secrets/rsa/ssh-{dns}/id_rsa"
 DCSS_RSA_SECRET_SPACE = "private"
 SSH_USERNAME = "duckie"
-SAFE_BRANCH_REGEX = re.compile("^[a-z]+-staging$")
+SAFE_BRANCH_REGEX = re.compile(r"^[a-z]+-staging$")
 # we need the server path since docker in docker - todo automate this
 SERVER_PATH = "/home/shared/dt-davinci-deployment/ci.duckietown.com/user-data/workspace"
 

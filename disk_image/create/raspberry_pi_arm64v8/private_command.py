@@ -79,7 +79,7 @@ CONFIG_PARTITION = "configfs"
 DEFAULT_HOSTNAME = "robot"
 DEFAULT_COUNTRY = "US"
 DISK_IMAGE_SIZE_GB = 6
-DISK_IMAGE_VERSION = "4.0.0"
+DISK_IMAGE_VERSION = "4.1.0"
 PLACEHOLDERS_VERSION = "2.0"
 OS_VERSION = "01jul2024"
 DEVICE_ARCH = "arm64v8"
@@ -755,6 +755,20 @@ class DTCommand(DTCommandAbs):
                                 " /etc/systemd/system/dt_init.service"
                                 " /etc/systemd/system/multi-user.target.wants/dt_init.service",
                             )
+                                                        
+                            run_cmd_in_partition(
+                                ROOT_PARTITION,
+                                "curl -fsSL https://download.docker.com/linux/ubuntu/gpg  | sudo gpg " + 
+                                " --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+                            )
+                            
+                            run_cmd_in_partition(
+                                ROOT_PARTITION,
+                                """echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+                            https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+                            | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"""
+                            )
+
                         # flush I/O buffer
                         dtslogger.info("Flushing I/O buffer...")
                         run_cmd(["sync"])
