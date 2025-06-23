@@ -13,8 +13,7 @@ DOCKER_SOCKET=unix:///var/run/docker.sock
 
 echo "Launching stack '${STACK_NAME}'..."
 set -e
-docker-compose \
-    --host "${DOCKER_SOCKET}" \
+docker --host "${DOCKER_SOCKET}" compose \
     --project-name "${STACK_NAME}" \
     --file "${STACK_FILE}" \
     "$@" \
