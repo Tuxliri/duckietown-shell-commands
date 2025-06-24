@@ -31,6 +31,19 @@ services:
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
       - /data:/data
 
+  ros-http-api:
+    image: ${REGISTRY}/duckietown/dt-ros-interface:ente-${ARCH}
+    container_name: ros1-http-api
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    environment:
+      DT_LAUNCHER: ros-http-api
+      DT_SUPERUSER: 1
+    volumes:
+      # avahi socket
+      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
+      - /data:/data
 
   flight-controller:
     image: ${REGISTRY}/duckietown/duckiedrone-ardupilot-driver:ente-${ARCH}
@@ -56,7 +69,7 @@ services:
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
       - /data:/data
-  
+
   rosbridge-websocket:
     image: ${REGISTRY}/duckietown/dt-rosbridge-websocket:ente-${ARCH}
     container_name: ros1-rosbridge-websocket
