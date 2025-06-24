@@ -1,13 +1,11 @@
 from dt_shell import DTCommandAbs, dtslogger, DTShell
 
 from .raspberry_pi_arm64v8.private_command import DTCommand as RaspberryPi64Command
-from .raspberry_pi.private_command import DTCommand as RaspberryPiCommand
 from .jetson_nano.private_command import DTCommand as JetsonNanoCommand
 
 DEFAULT_DEVICE = "raspberry_pi_arm64v8"
 
 DEVICE_TO_COMMAND = {
-    "raspberry_pi": RaspberryPiCommand,
     "raspberry_pi_arm64v8": RaspberryPi64Command,
     "jetson_nano": JetsonNanoCommand,
 }

@@ -25,6 +25,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
         """
         parser = argparse.ArgumentParser("dts duckiebot dashboard")
         parser.add_argument(
+            "--page",
+            default=None,
+            type=str,
+            help="Dashboard page"
+        )
+        parser.add_argument(
             "robot",
             help="Name of the robot to connect to"
         )

@@ -205,7 +205,11 @@ class DTCommand(DTCommandAbs):
         app_config: list = []
         terminate_renderer: Optional[Callable] = None
         if run_renderer:
-            version = parsed.version if parsed.version else get_most_recent_version_installed()
+            if parsed.version:
+                version = parsed.version
+            else:
+                shell.include.matrix.install.command(shell, ["--update"])
+                version = get_most_recent_version_installed()
             dtslogger.info(f"Configuring Renderer ({version})...")
             dtslogger.debug(f"Will try to run {version}...")
             # make sure the app is installed

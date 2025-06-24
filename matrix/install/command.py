@@ -67,6 +67,12 @@ class DTCommand(DTCommandAbs):
             return
         # get latest version available on the DCSS
         latest = get_latest_version()
+        # compare installed and latest versions
+        if installed_version:
+            if installed_version == latest:
+                return
+            app_dir = os.path.join(APP_RELEASES_DIR, f"v{installed_version}")
+            subprocess.check_call(["rm", "-rf", app_dir])
         # make sure the same version is not already installed (unless forced)
         app_dir = os.path.join(APP_RELEASES_DIR, f"v{latest}")
         if os.path.isdir(app_dir):
@@ -90,7 +96,6 @@ class DTCommand(DTCommandAbs):
                 space=DCSS_SPACE_NAME,
             )
         )
-        dtslogger.info("Download completed.")
         # install
         dtslogger.info("Installing...")
         subprocess.check_call(["unzip", f"v{latest}.zip"], cwd=app_dir)
@@ -99,13 +104,6 @@ class DTCommand(DTCommandAbs):
         os.remove(zip_local)
         # ---
         dtslogger.info("Installation completed successfully!")
-        dtslogger.info("""
-        
-        You can now run the Duckiematrix application using the command:
-        
-            >   dts matrix run --standalone --sandbox
-        
-        """)
 
     @staticmethod
     def complete(shell, word, line):

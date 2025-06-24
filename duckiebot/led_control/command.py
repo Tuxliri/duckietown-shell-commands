@@ -28,7 +28,8 @@ class DTCommand(DTCommandAbs):
             on_top=parsed.on_top,
             window_args={
                 "icon": get_asset_icon_path(ICON_ASSET),
-                "min-width": 700,
-                "min-height": 600
+                "min-height": 600,
+                "min-width": 600,
+                "width": 600,
             }
         )

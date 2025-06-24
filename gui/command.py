@@ -7,6 +7,7 @@ from datetime import datetime
 import docker
 
 import pytz
+import webbrowser
 from dt_shell import DTCommandAbs, DTShell, dtslogger
 
 from utils.cli_utils import start_command_in_subprocess
@@ -18,7 +19,7 @@ from utils.docker_utils import (
     get_registry_to_use,
     get_client_OLD,
 )
-
+from utils.duckietown_utils import get_distro
 from utils.git_utils import get_last_commit
 from utils.misc_utils import sanitize_hostname
 from utils.networking_utils import get_duckiebot_ip
@@ -55,12 +56,11 @@ class DTCommand(DTCommandAbs):
         client = get_client_OLD()
         if parsed.image is None:
             registry: str = get_registry_to_use()
-            # TODO: remove hardcoded distro, though VNC does not work on ente
-            distro: str = "daffy"
+            distro: str = get_distro(shell).branch
             image = DEFAULT_IMAGE_FMT.format(registry, distro, arch)
         else:
             image = parsed.image
-
+        print(image)
         # pull image
         if parsed.pull:
             pull_image_OLD(image, client)
@@ -188,7 +188,8 @@ class DTCommand(DTCommandAbs):
 
         # print some info
         if parsed.vnc:
-            dtslogger.info("Running novnc. Navigate to http://localhost:8087/ in your browser. ")
+            dtslogger.info("Running noVNC...")
+            webbrowser.open("http://localhost:8087/")
         dtslogger.debug(
             f"Running container with configuration:\n\n" f"{json.dumps(params, sort_keys=True, indent=4)}\n"
         )

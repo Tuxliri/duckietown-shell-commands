@@ -40,6 +40,8 @@ from .constants import (
     NETPLAN_WPA_PSK_NETWORK_CONFIG,
 )
 
+from disk_image.create.jetson_nano.private_command import DISK_IMAGE_VERSION as jetson_disk_image_version
+
 INIT_SD_CARD_VERSION = "2.1.0"  # incremental number, semantic version
 
 Wifi = namedtuple("Wifi", "name ssid psk username password")
@@ -62,7 +64,7 @@ def DISK_IMAGE_VERSION(robot_configuration, experimental=False, version_override
     board_to_disk_image_version = {
         "raspberry_pi": {"stable": "1.2.1", "experimental": "1.2.1"},
         "raspberry_pi_64": {"stable": "4.0.0", "experimental": "4.0.0"},
-        "jetson_nano_4gb": {"stable": "1.4.3", "experimental": "1.4.3"},
+        "jetson_nano_4gb": {"stable": jetson_disk_image_version, "experimental": "1.4.3"},
         "jetson_nano_2gb": {"stable": "1.2.2", "experimental": "1.2.2"},
     }
     board, _ = get_robot_hardware(robot_configuration)
@@ -86,7 +88,7 @@ def PLACEHOLDERS_VERSION(robot_configuration, experimental=False, version_overri
         },
         "jetson_nano_4gb": {
             # - stable
-            "1.4.3": "1.1",
+            jetson_disk_image_version : "1.1",
             # - experimental
             "-----": "1.1",
         },
@@ -235,6 +237,12 @@ class DTCommand(DTCommandAbs):
             default=None,
             help="Override the default placeholders version to use"
         )
+        parser.add_argument(
+            "--image",
+            default=None,
+            help="Path to a local .img file to use instead of downloading.",
+        )
+
         # parse arguments
         parsed = parser.parse_args(args=args)
 
@@ -274,7 +282,7 @@ class DTCommand(DTCommandAbs):
             parsed.robot_type = values["type"]
             parsed.robot_configuration = values[f"{parsed.robot_type}_configuration"]
             parsed.wifi = ",".join([f"{w['ssid']}:{w['wpa']}".strip(":") for w in values.get("wifi", [])])
-            parsed.experimental = values.get("experimental", False)
+            parsed.experimental = values["experimental"] == "true"
             parsed.size = int(values["size"])
             # the form includes all licenses
             if "license" in steps:
@@ -438,6 +446,18 @@ def step_license(_, parsed, __):
 
 
 def step_download(shell, parsed, data):
+    # use local image if specified
+    if parsed.image:
+        dtslogger.info(f"Using provided local disk image: {parsed.image}")
+        if not os.path.isfile(parsed.image):
+            dtslogger.error(f"The specified image file does not exist: {parsed.image}")
+            exit(3)
+        # create temp dir if it doesn't exist
+        _run_cmd(["mkdir", "-p", parsed.workdir])
+        # copy .img to expected location
+        shutil.copy(parsed.image, data["disk_img"])
+        return {}
+
     # check if dependencies are met
     ensure_command_is_installed("unzip")
 
@@ -602,6 +622,9 @@ def step_verify(_, parsed, data):
     # compare bytes
     try:
         with open(data["disk_img"], "rb") as origin:
+            # Check that parsed.device is not None
+            if parsed.device is None:
+                dtslogger.error("Destination device is None. If you're skipping the flash step, please provide a device using the --device flag.")
             with sudo_open(parsed.device, "rb") as destination:
                 buffer1 = origin.read(buf_size)
                 while buffer1:

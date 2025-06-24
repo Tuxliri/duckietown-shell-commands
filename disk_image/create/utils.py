@@ -154,7 +154,7 @@ class VirtualSDCard:
 
     def get_disk_identifier(self):
         dtslogger.info(f"Reading Disk Identifier for {self._loopdev}...")
-        p = re.compile(".*Disk identifier: (0x)?([0-9a-zA-Z\\-]*).*")
+        p = re.compile(r".*Disk identifier: (0x)?([0-9a-zA-Z\\-]*).*")
         fdisk_out = run_cmd(["sudo", "fdisk", "-l", self._loopdev], get_output=True)
         m = p.search(fdisk_out)
         disk_identifier = m.group(2)

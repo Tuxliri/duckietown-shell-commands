@@ -9,7 +9,6 @@ import os
 import shutil
 import subprocess
 import time
-import docker
 import socket
 import getpass
 from datetime import datetime
@@ -17,6 +16,7 @@ from datetime import datetime
 from utils.cli_utils import ask_confirmation
 from utils.docker_utils import DEFAULT_REGISTRY
 from utils.misc_utils import human_time
+from disk_image.create.steps import step_docker
 
 from disk_image.create.constants import (
     PARTITION_MOUNTPOINT,
@@ -27,13 +27,11 @@ from disk_image.create.constants import (
     MODULES_TO_LOAD,
     DATA_STORAGE_DISK_IMAGE_DIR,
     AUTOBOOT_STACKS_DIR,
-    DEFAULT_STACK,
 )
 
 from disk_image.create.utils import (
     VirtualSDCard,
     check_cli_tools,
-    pull_docker_image,
     disk_template_partitions,
     disk_template_objects,
     find_placeholders_on_disk,
@@ -45,7 +43,6 @@ from disk_image.create.utils import (
     validator_yaml_syntax,
     transfer_file,
     replace_in_file,
-    list_files,
     copy_file,
     get_validator_fcn,
 )
@@ -67,7 +64,7 @@ DISK_IMAGE_PARTITION_TABLE = {
     "RP4": 14,
 }
 DISK_IMAGE_SIZE_GB = 20
-DISK_IMAGE_VERSION = "1.4.2"
+DISK_IMAGE_VERSION = "2.0.6"
 ROOT_PARTITION = "APP"
 JETPACK_VERSION = "4.6.6"
 DEVICE_ARCH = "arm64v8"
@@ -83,7 +80,10 @@ TEMPLATE_FILE_VALIDATOR = {
 COMMAND_DIR = os.path.dirname(os.path.abspath(__file__))
 DISK_TEMPLATE_DIR = os.path.join(COMMAND_DIR, "disk_template")
 NVIDIA_LICENSE_FILE = os.path.join(COMMAND_DIR, "nvidia-license.txt")
-STACKS_DIR = os.path.join(COMMAND_DIR, "..", "..", "..", "stack", "stacks", DEFAULT_STACK)
+
+STACKS = ["robot/basics", "duckietown/duckiebot", "ros1/duckiebot"]
+STACKS_BASE_DIR = os.path.join(COMMAND_DIR, "..", "..", "..", "stack", "stacks")
+
 SUPPORTED_STEPS = [
     "license",
     "download",
@@ -104,7 +104,6 @@ APT_PACKAGES_TO_INSTALL = [
     "rsync",
     "nano",
     "htop",
-    "docker-compose",
     # provides the command `growpart`, used to resize the root partition at first boot
     "cloud-guest-utils",
     # provides the command `inotifywait`, used to monitor inode events on trigger sockets
@@ -113,7 +112,9 @@ APT_PACKAGES_TO_INSTALL = [
     # TODO: no releases contain this
     "gnupg2",
     "pass",
-    "nvidia-container-runtime"
+    "nvidia-container-runtime",
+    "curl",
+    "apt-transport-https"
 ]
 APT_PACKAGES_TO_HOLD = [
     # list here packages that cannot be updated through `chroot`
@@ -225,7 +226,7 @@ class DTCommand(DTCommandAbs):
             parsed.output, "cache", out_file_name(ex) + f".{step}"
         )
         # get version
-        distro: str = shell.profile.distro.name
+        distro = shell.profile.distro.name
         # create a virtual SD card object
         sd_card = VirtualSDCard(out_file_path("img"), DISK_IMAGE_PARTITION_TABLE)
         # this is the surgey plan that will be performed by the init_sd_card command
@@ -245,7 +246,7 @@ class DTCommand(DTCommandAbs):
                 "hostname": socket.gethostname(),
                 "user": getpass.getuser(),
                 "shell_version": shell_version,
-                "commands_version": shell.profile.distro.branch,
+                "commands_version": shell.get_commands_version(),
             },
             "modules": [
                 DOCKER_IMAGE_TEMPLATE(
@@ -608,6 +609,21 @@ class DTCommand(DTCommandAbs):
                             ROOT_PARTITION,
                             f"apt autoremove --yes",
                         )
+                        
+                        run_cmd_in_partition(
+                            ROOT_PARTITION,
+                            "curl -fsSL https://download.docker.com/linux/ubuntu/gpg  | sudo gpg " + 
+                            " --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+                        )
+                        
+                        run_cmd_in_partition(
+                            ROOT_PARTITION,
+                            """echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+                        https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+                        | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"""
+                        )
+
+
                     except Exception as e:
                         raise e
                     # unomunt bind /dev
@@ -629,84 +645,23 @@ class DTCommand(DTCommandAbs):
             dtslogger.info("Step END: upgrade\n")
         # Step: upgrade
         # <------
-        #
-        # ------>
-        # Step: docker
+
         if "docker" in parsed.steps:
             dtslogger.info("Step BEGIN: docker")
-            # from this point on, if anything weird happens, unmount the disk
-            try:
-                # make sure that the disk is mounted
-                if not sd_card.is_mounted():
-                    dtslogger.error(f"The disk {out_file_path('img')} is not mounted.")
-                    return
-                # check if the corresponding disk device exists
-                partition_disk = sd_card.partition_device(ROOT_PARTITION)
-                if not os.path.exists(partition_disk):
-                    raise ValueError(f"Disk device {partition_disk} not found")
-                # mount device
-                sd_card.mount_partition(ROOT_PARTITION)
-                # get local docker client
-                local_docker = docker.from_env()
-                # pull dind image
-                pull_docker_image(local_docker, DIND_IMAGE_NAME)
-                # run auxiliary Docker engine
-                remote_docker_dir = os.path.join(PARTITION_MOUNTPOINT(ROOT_PARTITION), "var", "lib", "docker")
-                remote_docker_engine_container = local_docker.containers.run(
-                    image=DIND_IMAGE_NAME,
-                    detach=True,
-                    remove=True,
-                    auto_remove=True,
-                    publish_all_ports=True,
-                    privileged=True,
-                    name="dts-disk-image-aux-docker",
-                    volumes={remote_docker_dir: {"bind": "/var/lib/docker", "mode": "rw"}},
-                    entrypoint=["dockerd", "--host=tcp://0.0.0.0:2375", "--bridge=none"],
-                )
-                dtslogger.info("Waiting 20 seconds for DIND to start...")
-                time.sleep(20)
-                # get IP address of the container
-                container_info = local_docker.api.inspect_container("dts-disk-image-aux-docker")
-                container_ip = container_info["NetworkSettings"]["IPAddress"]
-                # create remote docker client
-                endpoint_url = f"tcp://{container_ip}:2375"
-                dtslogger.info(f"DIND should now be up, using endpoint URL `{endpoint_url}`.")
-                remote_docker = docker.DockerClient(base_url=endpoint_url)
-                # from this point on, if anything weird happens, stop container and unmount disk
-                try:
-                    dtslogger.info("Transferring Docker images...")
-                    # pull images inside the disk image
-                    for module in MODULES_TO_LOAD:
-                        image = DOCKER_IMAGE_TEMPLATE(
-                            owner=module["owner"],
-                            module=module["module"],
-                            version=distro,
-                            tag=module["tag"] if "tag" in module else None,
-                            arch=DEVICE_ARCH,
-                        )
-                        pull_docker_image(remote_docker, image, platform=DEVICE_PLATFORM)
-                    # ---
-                    dtslogger.info("Docker images successfully transferred!")
-                except Exception as e:
-                    # unmount disk
-                    sd_card.umount()
-                    raise e
-                finally:
-                    # stop container
-                    remote_docker_engine_container.stop()
-                    # unmount partition
-                    sd_card.umount_partition(ROOT_PARTITION)
-                # ---
-            except Exception as e:
-                # unmount disk
-                sd_card.umount()
-                raise e
-            # ---
-            cache_step("docker")
+            # Call the refactored function:
+            step_docker(
+                sd_card=sd_card,
+                out_file_path=out_file_path,
+                ROOT_PARTITION=ROOT_PARTITION,
+                STACKS=STACKS,
+                STACKS_BASE_DIR=STACKS_BASE_DIR,
+                DEVICE_PLATFORM=DEVICE_PLATFORM,
+                DIND_IMAGE_NAME=DIND_IMAGE_NAME,
+                cache_step_fn=cache_step,
+                architecture=DEVICE_ARCH
+            )
             dtslogger.info("Step END: docker\n")
-        # Step: docker
-        # <------
-        #
+
         # ------>
         # Step: setup
         if "setup" in parsed.steps:
@@ -755,20 +710,17 @@ class DTCommand(DTCommandAbs):
                             run_cmd(["sudo", "mkdir", "-p", update["destination"]])
                         # copy stacks (APP only)
                         if partition == ROOT_PARTITION:
-                            for stack in list_files(STACKS_DIR, "yaml"):
-                                origin = os.path.join(STACKS_DIR, stack)
+                            abs_stacks_base = os.path.abspath(STACKS_BASE_DIR)
+                            for stack in STACKS:
+                                origin = os.path.join(abs_stacks_base, stack + ".yaml")
                                 destination = os.path.join(
-                                    PARTITION_MOUNTPOINT(partition), AUTOBOOT_STACKS_DIR.lstrip("/"), stack
+                                    PARTITION_MOUNTPOINT(partition), AUTOBOOT_STACKS_DIR.lstrip("/"), stack + '.yaml'
                                 )
                                 relative = os.path.join(AUTOBOOT_STACKS_DIR, stack)
-                                # validate file
-                                validator = _get_validator_fcn(partition, relative)
-                                if validator:
-                                    dtslogger.debug(f"Validating file {relative}...")
-                                    validator(shell, origin, relative, arch=DEVICE_ARCH)
                                 # create or modify file
                                 effect = "MODIFY" if os.path.exists(destination) else "NEW"
                                 dtslogger.info(f"- Updating file ({effect}) [{relative}]")
+                                run_cmd(["sudo", "mkdir", "-p", os.path.dirname(destination)])
                                 # copy new file
                                 run_cmd(["sudo", "cp", origin, destination])
                                 # add architecture as default value in the stack file
@@ -932,7 +884,7 @@ class DTCommand(DTCommandAbs):
                     file=[out_file_path("zip")],
                     object=[os.path.join(DATA_STORAGE_DISK_IMAGE_DIR, out_file_name("zip"))],
                     space="public",
-                    token=shell.profile.secrets.dt_token,
+                    token=shell.get_dt1_token(),
                 ),
             )
             dtslogger.info("Done!")

@@ -1,4 +1,3 @@
-version: "1.0"
 services:
 
   dtps:
@@ -25,7 +24,7 @@ services:
     environment:
       DT_SUPERUSER: 1
       DT_LAUNCHER: actuator-lights
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 10
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
     volumes:
       - /data:/data
       # dtps sockets
