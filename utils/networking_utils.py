@@ -69,8 +69,9 @@ def get_default_gateway_and_interface():
 
 
 def get_interface_ip_address(ifname):
-    return os.popen(f'ip addr show {ifname}' + ' | grep "\<inet\>" | awk \'{ print $2 }\' '
-                                               '| awk -F "/" \'{ print $1 }\'').read().strip()
+    out = subprocess.check_output(['ip', '-4', 'addr', 'show', ifname], text=True)
+    m = re.search(r'\binet\s+(\d+\.\d+\.\d+\.\d+)/', out)
+    return m.group(1) if m else None
 
 
 @lru_cache
