@@ -27,6 +27,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
         """
         parser = argparse.ArgumentParser("dts duckiebot dtps")
         parser.add_argument(
+            "--kv_store",
+            default=False,
+            action="store_true",
+            help="KV store"
+        )
+        parser.add_argument(
             "--topic",
             default=None,
             type=str,

@@ -11,7 +11,8 @@ class DTCommand(DTCommandAbs):
         parsed = kwargs.get("parsed", None)
         if parsed is None:
             parsed = DTCommand.parser.parse_args(args)
+        port = 11411 if parsed.kv_store else 11511
         topic = parsed.topic.strip("/") if parsed.topic else ""
         if topic:
             topic += "/"
-        webbrowser.open(f"http://{parsed.robot}.local:11511/{topic}")
+        webbrowser.open(f"http://{parsed.robot}.local:{port}/{topic}")
