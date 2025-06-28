@@ -226,12 +226,6 @@ class DTCommand(DTCommandAbs):
             help="Override the default disk image version to use"
         )
         parser.add_argument(
-            "--version",
-            dest="disk_image_version",
-            default=None,
-            help="Override the default disk image version to use"
-        )        
-        parser.add_argument(
             "--placeholders-version",
             dest="placeholders_version",
             default=None,
