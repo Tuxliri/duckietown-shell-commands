@@ -106,8 +106,11 @@ class DTCommand(DTCommandAbs):
         dtslogger.info(f"Running stack [{project_name}]({stack})...")
         print("------>")
         # collect arguments
+        #docker_arguments = [
+        #    "--remove-orphans",
+        #]
         docker_arguments = [
-            "--remove-orphans",
+            "--detach",
         ]
         # get copy of environment
         env = {}
