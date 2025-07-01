@@ -55,18 +55,25 @@ class MatrixEngine:
         self.verbose = parsed.verbose
         # check for conflicting arguments
         # - map VS sandbox
-        if parsed.sandbox and parsed.map is not None:
+        sandbox = parsed.sandbox
+        map = parsed.map
+        if sandbox and map is not None:
             dtslogger.error("Sandbox mode (--sandbox) and custom map (-m/--map) "
                             "cannot be used together.")
             return False
         # make sure the map is given (when not in sandbox standalone mode)
-        if not parsed.map and not parsed.sandbox:
+        if not map and not sandbox:
             dtslogger.error("You need to specify a map with -m/--map or choose to run in "
                             "--sandbox mode to use a default map.")
             return False
         # make sure the map path exists when given
-        map_dir = os.path.abspath(parsed.map) if parsed.map is not None else None
-        map_name = os.path.basename(parsed.map.rstrip('/')) if parsed.map is not None else None
+        embedded = parsed.embedded
+        if sandbox:
+            embedded = True
+            map_name = "sandbox"
+        else:
+            map_name = os.path.basename(map.rstrip("/")) if map is not None else None
+        map_dir = os.path.abspath(map) if map is not None and not embedded else None
         if map_dir is not None and not os.path.isdir(map_dir):
             dtslogger.error(f"The given path '{map_dir}' does not exist.")
             return False
@@ -112,10 +119,10 @@ class MatrixEngine:
         num_renderers = min(max(1, parsed.renderers), MAX_RENDERERS)
         engine_config["command"] += ["--renderers", str(num_renderers)]
         # set the map
-        if parsed.sandbox:
+        if embedded:
             engine_config["command"] += [
                 "--maps-dir", "/maps",
-                "--map", "sandbox"
+                "--map", map_name
             ]
         else:
             map_location = f"/maps/{map_name}"

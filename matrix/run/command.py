@@ -47,6 +47,12 @@ class DTCommand(DTCommandAbs):
             help="Directory containing the map to load"
         )
         parser.add_argument(
+            "--embedded",
+            default=False,
+            action="store_true",
+            help="Use the embedded map directory as the root directory for '--map'"
+        )
+        parser.add_argument(
             "-e",
             "--engine",
             dest="engine_hostname",
