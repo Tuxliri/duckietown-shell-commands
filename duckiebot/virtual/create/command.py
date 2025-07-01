@@ -9,7 +9,7 @@ import docker
 
 from disk_image.create.constants import \
     MODULES_TO_LOAD, \
-    DOCKER_IMAGE_TEMPLATE, DEFAULT_DEVICE_STACKS_DIR
+    DOCKER_IMAGE_TEMPLATE, AUTOBOOT_STACKS_DIR
 from disk_image.create.utils import \
     run_cmd, \
     replace_in_file, \
@@ -26,14 +26,10 @@ DIND_IMAGE_NAME = "docker:24.0-dind"
 VIRTUAL_FLEET_DIR = os.path.join(USER_DATA_DIR, "virtual_robots")
 COMMAND_DIR = os.path.dirname(os.path.abspath(__file__))
 COMMANDS_DIR = os.path.realpath(os.path.join(COMMAND_DIR, "..", "..", ".."))
-STACKS_DIR = os.path.join(COMMANDS_DIR, "stack", "stacks")
 DISK_TEMPLATE_DIR = os.path.join(COMMANDS_DIR, "disk_image", "create", "virtual", "disk_template")
 
-STACKS_TO_LOAD = {
-    "basics": "robot/basics",
-    "duckietown": "duckietown/{robot_type}",
-    "ros1": "ros1/{robot_type}",
-}
+STACKS_BASE_DIR = os.path.join(COMMANDS_DIR, "stack", "stacks")
+STACKS = ["robot/basics", "duckietown/{robot_type}", "ros1/{robot_type}"]
 
 
 class DTCommand(DTCommandAbs):
@@ -114,10 +110,10 @@ class DTCommand(DTCommandAbs):
             dtslogger.info("Copying skeleton root disk to the root of your virtual robot.")
             run_cmd(["cp", "-r", origin, vbot_root_dir])
             # copy stacks
-            for project, stack_fmt in STACKS_TO_LOAD.items():
-                stack: str = stack_fmt.format(robot_type=parsed.type)
-                origin = os.path.join(STACKS_DIR, f"{stack}.yaml")
-                destination = os.path.join(vbot_root_dir, DEFAULT_DEVICE_STACKS_DIR.lstrip("/"), f"{project}.yaml")
+            for s in STACKS:
+                stack: str = s.format(robot_type=parsed.type)
+                origin = os.path.join(STACKS_BASE_DIR, f"{stack}.yaml")
+                destination = os.path.join(vbot_root_dir, AUTOBOOT_STACKS_DIR.lstrip("/"), f"{stack}.yaml")
                 destination_dir = os.path.dirname(destination)
                 # copy new file
                 dtslogger.debug(f"Copying '{origin}' -> '{destination}'")
