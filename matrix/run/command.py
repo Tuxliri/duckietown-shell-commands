@@ -145,18 +145,6 @@ class DTCommand(DTCommandAbs):
             help="Run in verbose mode"
         )
         parser.add_argument(
-            "--frame-rate",
-            default=None,
-            type=int,
-            help="Renderer frame rate"
-        )
-        parser.add_argument(
-            "--mouse-sensitivity",
-            default=None,
-            type=float,
-            help="Mouse sensitivity"
-        )
-        parser.add_argument(
             "--tutorial",
             default=False,
             action="store_true",
@@ -246,12 +234,6 @@ class DTCommand(DTCommandAbs):
             # custom renderer key
             if parsed.renderer_key is not None:
                 app_config += ["--renderer-key", parsed.renderer_key]
-            # renderer frame rate
-            if parsed.frame_rate is not None:
-                app_config += ["--frame-rate", str(parsed.frame_rate)]
-            # mouse sensitivity
-            if parsed.mouse_sensitivity is not None:
-                app_config += ["--mouse-sensitivity", str(parsed.mouse_sensitivity)]
             # tutorial
             if parsed.tutorial:
                 app_config += ["--tutorial"]
