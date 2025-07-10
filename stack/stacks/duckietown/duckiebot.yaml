@@ -15,161 +15,31 @@ services:
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
-  driver-camera:
+  drivers:
     image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-camera
+    container_name: drivers
     restart: unless-stopped
     network_mode: host
     privileged: true
     pid: host
     environment:
       DT_SUPERUSER: 1
-      DT_LAUNCHER: sensor-camera
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
+    command: >
+      bash -c "
+        dt-launcher-sensor-camera & 
+        dt-launcher-sensor-tof & 
+        dt-launcher-sensor-imu & 
+        dt-launcher-sensor-power-button & 
+        dt-launcher-sensor-wheel-encoders & 
+        dt-launcher-actuator-display &
+        dt-launcher-actuator-wheels & 
+        dt-launcher-actuator-lights & 
+        dt-launcher-control-mapper && wait"
     volumes:
       - /data:/data
-      # dtps sockets
       - /data/ramdisk/dtps:/dtps
-      # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-      # nvargus socket
       - /tmp:/tmp
-
-  driver-tof:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-tof
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: sensor-tof
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-
-  driver-imu:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-imu
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: sensor-imu
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-
-  driver-power-button:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-power-button
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: sensor-power-button
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-
-  driver-wheel-encoders:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-wheel-encoders
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: sensor-wheel-encoders
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-
-  driver-wheels:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-wheels
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: actuator-wheels
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-
-  driver-lights:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-lights
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: actuator-lights
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-
-  driver-display:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: driver-display
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: actuator-display
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
-
-  control-mapper:
-    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
-    container_name: control-mapper
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    environment:
-      DT_SUPERUSER: 1
-      DT_LAUNCHER: control-mapper
-      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
-    volumes:
-      - /data:/data
-      # dtps sockets
-      - /data/ramdisk/dtps:/dtps
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
   dashboard:
     image: ${REGISTRY}/duckietown/dt-device-dashboard:ente-${ARCH}
