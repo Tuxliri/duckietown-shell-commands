@@ -69,7 +69,10 @@ class DTCommand(DTCommandAbs):
             engine_hostname=None,
             renderer_id=None,
             renderer_key=None,
-            no_pull=False,
+            frame_rate=None,
+            mouse_sensitivity=None,
+            tutorial=False,
+            no_pull=parsed.no_pull,
             verbose=False,
         )
 

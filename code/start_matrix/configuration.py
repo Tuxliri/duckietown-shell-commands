@@ -29,6 +29,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Directory containing the project to work on"
         )
         parser.add_argument(
+            "--no-pull",
+            action="store_true",
+            default=False,
+            help="Prevent from pulling the latest duckiematrix image"
+        )
+        parser.add_argument(
             "-H",
             "--machine",
             default=None,
