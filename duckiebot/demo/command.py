@@ -44,7 +44,11 @@ class DTCommand(DTCommandAbs):
         parser = argparse.ArgumentParser(prog=prog, usage=usage)
 
         parser.add_argument(
-            "--demo_name", "-d", dest="demo_name", default=None, help="Name of the demo to run"
+            "--demo_name",
+            "-d",
+            dest="demo_name",
+            default=None,
+            help="Name of the demo to run"
         )
 
         parser.add_argument(
@@ -60,7 +64,7 @@ class DTCommand(DTCommandAbs):
             "-p",
             dest="package_name",
             default=None,
-            help="You can specify the package that you want to use to look for launch files",
+            help="Package to use to look for launch files",
         )
 
         parser.add_argument(
@@ -68,7 +72,7 @@ class DTCommand(DTCommandAbs):
             "-t",
             dest="robot_type",
             default="auto",
-            help="The robot type",
+            help="Robot type",
         )
 
         parser.add_argument(
@@ -76,7 +80,7 @@ class DTCommand(DTCommandAbs):
             "-c",
             dest="robot_configuration",
             default="auto",
-            help="The robot configuration",
+            help="Robot configuration",
         )
 
         parser.add_argument(
@@ -84,7 +88,7 @@ class DTCommand(DTCommandAbs):
             "-i",
             dest="image_to_run",
             default=DEFAULT_IMAGE,
-            help="Docker image to use, you probably don't need to change ",
+            help="Docker image to use",
         )
 
         parser.add_argument(
@@ -93,7 +97,7 @@ class DTCommand(DTCommandAbs):
             dest="debug",
             action="store_true",
             default=False,
-            help="will enter you into the running container",
+            help="Enter the running container",
         )
 
         parser.add_argument(
@@ -102,9 +106,7 @@ class DTCommand(DTCommandAbs):
             dest="experimental",
             action="store_true",
             default=False,
-            help="you can use this if your demo is in the `experimental` repo. "
-            + "It will pick the image from the experimental repo and it will"
-            + "default the package name to experimental_demos",
+            help=f"Use a demo from the 'experimental' repository (the package name will be set to '{EXPERIMENTAL_PACKAGE}')",
         )
 
         parser.add_argument(

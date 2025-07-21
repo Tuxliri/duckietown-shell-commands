@@ -30,8 +30,9 @@ class DTCommand(DTCommandAbs):
             fullscreen=parsed.fullscreen,
             on_top=parsed.on_top,
             window_args={
+                "height": 360,
                 "icon": get_asset_icon_path(ICON_ASSET),
-                "min-height": 600,
+                "min-height": 360,
                 "min-width": 600,
                 "width": 600,
             },
