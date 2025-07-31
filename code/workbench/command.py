@@ -69,12 +69,18 @@ class DTCommand(DTCommandAbs):
         dtslogger.info(f"Settings:\n{settings}")
 
         if parsed.matrix:
+            # TODO make sure the matrix is running
             dtslogger.info("Attaching Robot to the Duckiematrix...")
             shell.include.matrix.attach.command(
                 shell,
                 [parsed.robot, settings.matrix['vehicle'] ],
                 parsed=None
             )
+            dtslogger.info("Bring up the duckiematrix stack...")
+            stack_up_options = ["--machine", parsed.robot, "--detach"]
+            success = shell.include.stack.up.command(shell, stack_up_options + ["robot/duckiematrix"])
+            if not success:
+                dtslogger.error("Problem bringing up duckiematrix stack")
 
 
         # sanitize hostnames (lowercase and remove .local)
@@ -88,13 +94,16 @@ class DTCommand(DTCommandAbs):
 
         # load project
         parsed.workdir = os.path.abspath(parsed.workdir)
-        project = DTProject(parsed.workdir)
+
+        project = DTProject(parsed.workdir, recipe.path)
+
         # collect run arguments (if any)
         run_arg: Dict[str, Any] = {}
         if parsed.launcher:
             # make sure the launcher exists
             if parsed.launcher not in project.launchers:
-                dtslogger.error(f"Launcher '{parsed.launcher}' not found in the current project")
+                dtslogger.error(f"Launcher '{parsed.launcher}' not found in the current project, options are: "
+                                f"{project.launchers}")
                 return False
 
         # docker args

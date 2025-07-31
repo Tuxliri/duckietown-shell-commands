@@ -98,9 +98,11 @@ def recipe_needs_update(repository: str, branch: str, location: str) -> bool:
             data = json.loads(content)
             remote_sha = data["commit"]["sha"]
         except Exception as e:
-            dtslogger.error(str(e))
+            dtslogger.error(f"error getting remote SHA {e}")
             return False
 
+        dtslogger.info(f"remote SHA: {remote_sha}")
+        dtslogger.info(f"local SHA: {local_sha}")
         # check if we need to update
         need_update = local_sha != remote_sha
         # touch flag to reset update check time

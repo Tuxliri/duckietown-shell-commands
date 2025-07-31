@@ -20,9 +20,10 @@ RUN python3 -m pip install \
     sphinx-autobuild \
     pygments==2.5.2 \
     jinja2==3.0 \
-    mock
+    mock \
+    sphinx-autoapi
 
-COPY assets/docs /docs
+#COPY assets/docs /docs
 
 RUN cd "/" \
     && git clone https://github.com/duckietown/napoleon \
@@ -38,8 +39,9 @@ COPY assets/output-html.manifest.yaml /out
 RUN chmod -R 777 /docs
 
 CMD cp -r /docs/in/* /docs/source/ \
-    && cd /docs \
-    && sphinx-build -b html source build/html \
-    && cp -r /docs/build/html/* /${BOOK_NAME}/ \
+    && cd /docs/source \
+    && python3 --version e\
+    && make html \
+    && cp -r /docs/_build/html/* /${BOOK_NAME}/ \
     && cp /out/output-html.manifest.yaml /${BOOK_NAME}/ \
     || cat /tmp/sphinx-err-*.log

@@ -114,17 +114,18 @@ class DTCommand(DTCommandAbs):
         )
         # image_docs = project.image(arch, loop=parsed.loop, docs=True, owner=parsed.username)
 
+        image = "docker.io/duckietown/dt-core:ente-amd64"
         # file locators
         repo_file = lambda *p: os.path.join(parsed.workdir, *p)
         docs_file = lambda *p: os.path.join(repo_file("docs"), *p)
 
         # check if folders and files exist
         dtslogger.info("Checking if the documentation files are in order...")
-        for f in ["", "config.yaml", "index.rst"]:
-            if not os.path.exists(docs_file(f)):
-                dtslogger.error(f"File {docs_file(f)} not found. Aborting.")
-                exit(1)
-        dtslogger.info("Done!")
+#        for f in ["", "config.yaml", "index.rst"]:
+#            if not os.path.exists(docs_file(f)):
+#                dtslogger.error(f"File {docs_file(f)} not found. Aborting.")
+#                exit(1)
+#        dtslogger.info("Done!")
 
         # Get a docker client
         dclient = docker.from_env()
