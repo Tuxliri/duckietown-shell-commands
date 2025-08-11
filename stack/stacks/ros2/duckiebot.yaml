@@ -111,8 +111,6 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      # avahi socket
-      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
   rosbridge-websocket:
     image: ${REGISTRY}/duckietown/dt-ros2bridge-websocket:ente-${ARCH}
