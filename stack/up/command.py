@@ -56,7 +56,7 @@ class DTCommand(DTCommandAbs):
             help="Name of the project to use for the stack",
         )
 
-        parser.add_argument("stack", nargs=1, default=None)
+        parser.add_argument("stack", nargs="+", default=None)
         parsed, _ = parser.parse_known_args(args=args)
         # ---
         # try to interpret it as a multi-command
@@ -65,53 +65,15 @@ class DTCommand(DTCommandAbs):
             multi.execute()
             return True
         # ---
-        stack = parsed.stack[0]
-        project_name = parsed.project or stack.replace("/", "_")
+        stacks = parsed.stack
         robot: str = parsed.machine.replace(".local", "")
         hostname: str = best_host_for_robot(parsed.machine)
-        # sanitize stack
-        stack = stack if "/" in stack else f"{stack}/{DEFAULT_STACK}"
-        # check stack
-        stack_cmd_dir = pathlib.Path(__file__).parent.parent.absolute()
-        stack_file = os.path.join(stack_cmd_dir, "stacks", stack) + ".yaml"
-        if not os.path.isfile(stack_file):
-            dtslogger.error(f"Stack [{project_name}]({stack}) not found.")
-            return False
         # info about registry
         registry_to_use = get_registry_to_use()
-
         # get info about docker endpoint
         dtslogger.info("Retrieving info about Docker endpoint...")
         endpoint_arch = get_endpoint_architecture(hostname)
         dtslogger.info(f'Detected device architecture is "{endpoint_arch}".')
-        # pull images
-        processed: Set[str] = set()
-        if parsed.pull:
-            with open(stack_file, "r") as fin:
-                stack_content = yaml.safe_load(fin)
-            for service in stack_content["services"].values():
-                image_name = service["image"].replace("${ARCH}", endpoint_arch)
-                image_name = image_name.replace("${REGISTRY}", registry_to_use)
-                if image_name in processed:
-                    continue
-                dtslogger.info(f"Pulling image `{image_name}`...")
-                processed.add(image_name)
-                try:
-                    pull_image_OLD(image_name, hostname)
-                except NotFound:
-                    msg = f"Image '{image_name}' not found on registry '{registry_to_use}'. Aborting."
-                    dtslogger.error(msg)
-                    return False
-        # print info
-        dtslogger.info(f"Running stack [{project_name}]({stack})...")
-        print("------>")
-        # collect arguments
-        #docker_arguments = [
-        #    "--remove-orphans",
-        #]
-        docker_arguments = [
-            "--detach",
-        ]
         # get copy of environment
         env = {}
         env.update(os.environ)
@@ -119,15 +81,47 @@ class DTCommand(DTCommandAbs):
         env["ARCH"] = endpoint_arch
         env["REGISTRY"] = registry_to_use
         # -d/--detach
+        docker_arguments = ["--detach"]
         if parsed.detach:
             docker_arguments.append("--detach")
-        # run docker compose stack
-        H = f"{hostname}:{DEFAULT_DOCKER_TCP_PORT}"
-        start_command_in_subprocess(
-            ["docker", f"--host={H}", "compose", "--file", stack_file, "up"]
-            + docker_arguments,
-            env=env,
-        )
-        # ---
-        print("<------")
+        # process each stack
+        for stack in stacks:
+            project_name = parsed.project or stack.replace("/", "_")
+            # sanitize stack
+            stack_name = stack if "/" in stack else f"{stack}/{DEFAULT_STACK}"
+            # check stack
+            stack_cmd_dir = pathlib.Path(__file__).parent.parent.absolute()
+            stack_file = os.path.join(stack_cmd_dir, "stacks", stack_name) + ".yaml"
+            if not os.path.isfile(stack_file):
+                dtslogger.error(f"Stack [{project_name}]({stack_name}) not found.")
+                continue
+            # pull images
+            processed: Set[str] = set()
+            if parsed.pull:
+                with open(stack_file, "r") as fin:
+                    stack_content = yaml.safe_load(fin)
+                for service in stack_content["services"].values():
+                    image_name = service["image"].replace("${ARCH}", endpoint_arch)
+                    image_name = image_name.replace("${REGISTRY}", registry_to_use)
+                    if image_name in processed:
+                        continue
+                    dtslogger.info(f"Pulling image `{image_name}`...")
+                    processed.add(image_name)
+                    try:
+                        pull_image_OLD(image_name, hostname)
+                    except NotFound:
+                        msg = f"Image '{image_name}' not found on registry '{registry_to_use}'. Aborting."
+                        dtslogger.error(msg)
+                        continue
+            # print info
+            dtslogger.info(f"Running stack [{project_name}]({stack_name})...")
+            print("------>")
+            # run docker compose stack
+            H = f"{hostname}:{DEFAULT_DOCKER_TCP_PORT}"
+            start_command_in_subprocess(
+                ["docker", f"--host={H}", "compose", "--file", stack_file, "up"]
+                + docker_arguments,
+                env=env,
+            )
+            print("<------")
         return True
