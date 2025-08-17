@@ -25,8 +25,9 @@ from utils.docker_utils import (
     get_endpoint_architecture,
     get_registry_to_use, CLOUD_BUILDERS, get_cloud_builder, merge_docker_compose_services,
 )
-from utils.misc_utils import human_size, sanitize_hostname, pretty_exc, pretty_yaml, random_string
+from utils.misc_utils import human_size, pretty_exc, pretty_yaml, random_string
 from utils.multi_command_utils import MultiCommand
+from utils.resolve import get_duckiebot_host
 
 from .configuration import DEFAULT_TRUE
 
@@ -115,8 +116,8 @@ class DTCommand(DTCommandAbs):
         else:
             # local builder is the default
             if parsed.machine is not None:
-                # sanitize hostname
-                parsed.machine = sanitize_hostname(parsed.machine)
+                # resolve hostname
+                parsed.machine = get_duckiebot_host(parsed.machine)
             else:
                 parsed.machine = DEFAULT_MACHINE
 
