@@ -35,15 +35,15 @@ def _magicdns_candidates(bot_name: str) -> Iterable[str]:
 
 
 def get_duckiebot_host(
-    default_name: str = "duckiebot",
+    duckiebot_name: str = "duckiebot",
     extra_candidates: Optional[Iterable[str]] = None,
 ) -> str:
     """Return the best hostname to reach the Duckiebot.
     Precedence:
       1) DUCKIEBOT_HOST (explicit override)
-      2) `default_name` (MagicDNS short name)
-      3) `default_name`.local (mDNS)
-      4) `default_name`.<TAILNET_DOMAIN> (MagicDNS FQDN, optional)
+      2) `duckiebot_name`.local (mDNS)
+      3) `duckiebot_name` (MagicDNS short name)
+      4) `duckiebot_name`.<TAILNET_DOMAIN> (MagicDNS FQDN, optional)
       5) any extra candidates passed in
     Raises RuntimeError if none are reachable.
     """
@@ -51,8 +51,8 @@ def get_duckiebot_host(
     if override:
         return override
 
-    candidates = [default_name, f"{default_name}.local"]
-    candidates += list(_magicdns_candidates(default_name))
+    candidates = [ f"{duckiebot_name}.local", duckiebot_name]
+    candidates += list(_magicdns_candidates(duckiebot_name))
     if extra_candidates:
         candidates += list(extra_candidates)
 
