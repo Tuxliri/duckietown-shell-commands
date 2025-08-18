@@ -19,7 +19,7 @@ def _is_reachable(host: str, port: int = 22, timeout: float = 1.5) -> bool:
         try:
             # -c 1 one packet, -W timeout seconds (Linux/BusyBox compatible)
             subprocess.run(
-                ["ping", "-c", "1", "-W", str(int(timeout)), host],
+                ["ping", "-c", "1", "-W", str(timeout), host],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True
             )
             return True
