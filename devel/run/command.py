@@ -121,6 +121,11 @@ class DTCommand(DTCommandAbs):
             else:
                 parsed.machine = DEFAULT_MACHINE
 
+        # cloud Docker endpoints (ip:port) are already explicit and shouldn't
+        # be passed through get_duckiebot_host
+        if parsed.machine and ":" not in parsed.machine and "://" not in parsed.machine:
+            parsed.machine = shell.get_duckiebot_host(parsed.machine)
+
         # when we run against a remote machine, we need to sync the code (unless we are using --cloud)
         if parsed.machine != DEFAULT_MACHINE:
             parsed.sync = not parsed.cloud

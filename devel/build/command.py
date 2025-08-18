@@ -245,6 +245,13 @@ class DTCommand(DTCommandAbs):
         if parsed.destination and parsed.destination != DEFAULT_MACHINE and '://' not in parsed.destination:
             parsed.destination = get_duckiebot_host(parsed.destination)
 
+        # cloud Docker endpoints (ip:port) are already explicit and shouldn't
+        # be passed through get_duckiebot_host
+        if parsed.machine and ":" not in parsed.machine and "://" not in parsed.machine:
+            parsed.machine = shell.get_duckiebot_host(parsed.machine)
+        if parsed.destination and ":" not in parsed.destination and "://" not in parsed.destination:
+            parsed.destination = shell.get_duckiebot_host(parsed.destination)
+
         # add code labels
         project_head_version = project.head_version if project.is_clean() else "ND"
         project_closest_version = project.closest_version
