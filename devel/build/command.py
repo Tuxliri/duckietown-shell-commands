@@ -240,10 +240,6 @@ class DTCommand(DTCommandAbs):
             # update destination parameter
             if not parsed.destination:
                 parsed.destination = DEFAULT_MACHINE
-        if parsed.machine and parsed.machine != DEFAULT_MACHINE and '://' not in parsed.machine:
-            parsed.machine = get_duckiebot_host(parsed.machine)
-        if parsed.destination and parsed.destination != DEFAULT_MACHINE and '://' not in parsed.destination:
-            parsed.destination = get_duckiebot_host(parsed.destination)
 
         # cloud Docker endpoints (ip:port) are already explicit and shouldn't
         # be passed through get_duckiebot_host
