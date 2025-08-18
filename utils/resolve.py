@@ -51,7 +51,7 @@ def get_duckiebot_host(
     if override:
         return override
 
-    candidates = [ f"{duckiebot_name}.local", duckiebot_name]
+    candidates = [f"{duckiebot_name}.local", duckiebot_name]
     candidates += list(_magicdns_candidates(duckiebot_name))
     if extra_candidates:
         candidates += list(extra_candidates)
