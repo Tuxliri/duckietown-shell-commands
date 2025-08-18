@@ -51,8 +51,9 @@ from dtproject.constants import ARCH_TO_PLATFORM, DISTRO_KEY, BUILD_COMPATIBILIT
 from dtproject.utils.misc import dtlabel
 
 from utils.duckietown_utils import DEFAULT_OWNER
-from utils.misc_utils import human_size, human_time, sanitize_hostname, parse_version, pretty_json
+from utils.misc_utils import human_size, human_time, parse_version, pretty_json
 from utils.multi_command_utils import MultiCommand
+from utils.resolve import get_duckiebot_host
 from utils.pip_utils import get_pip_index_url
 
 from dockertown.components.buildx.imagetools.models import Manifest
@@ -166,9 +167,6 @@ class DTCommand(DTCommandAbs):
             dtslogger.info(f"Overriding version {version!r} with {parsed.tag!r}")
             version = parsed.tag
 
-        # sanitize hostname
-        if parsed.machine is not None:
-            parsed.machine = sanitize_hostname(parsed.machine)
 
         # duckietown token
         if parsed.ci:
@@ -242,6 +240,10 @@ class DTCommand(DTCommandAbs):
             # update destination parameter
             if not parsed.destination:
                 parsed.destination = DEFAULT_MACHINE
+        if parsed.machine and parsed.machine != DEFAULT_MACHINE and '://' not in parsed.machine:
+            parsed.machine = get_duckiebot_host(parsed.machine)
+        if parsed.destination and parsed.destination != DEFAULT_MACHINE and '://' not in parsed.destination:
+            parsed.destination = get_duckiebot_host(parsed.destination)
 
         # add code labels
         project_head_version = project.head_version if project.is_clean() else "ND"
