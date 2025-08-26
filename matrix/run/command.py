@@ -95,21 +95,21 @@ class DTCommand(DTCommandAbs):
             action="store_true",
             help="(Advanced) Force the use of the OpenGL rendering API"
         )
-        parser.add_argument(
-            "--gym",
-            "--simulation",
-            dest="simulation",
-            default=False,
-            action="store_true",
-            help="Run in simulation mode"
-        )
-        parser.add_argument(
-            "-t", "-dt",
-            "--delta-t",
-            default=None,
-            type=float,
-            help="Time step (gym mode only)",
-        )
+        # parser.add_argument(
+        #     "--gym",
+        #     "--simulation",
+        #     dest="simulation",
+        #     default=False,
+        #     action="store_true",
+        #     help="Run in simulation mode"
+        # )
+        # parser.add_argument(
+        #     "-t", "-dt",
+        #     "--delta-t",
+        #     default=None,
+        #     type=float,
+        #     help="Time step (gym mode only)",
+        # )
         parser.add_argument(
             "--link",
             dest="links",
@@ -181,10 +181,10 @@ class DTCommand(DTCommandAbs):
                             "Standalone mode, or use a default map with -s/--sandbox.")
             return
         # make sure the time step is only given in gym mode
-        if parsed.delta_t is not None and not parsed.simulation:
-            dtslogger.error("You can specify a --delta-t only when running with "
-                            "--gym/--simulation.")
-            return
+        # if parsed.delta_t is not None and not parsed.simulation:
+        #     dtslogger.error("You can specify a --delta-t only when running with "
+        #                     "--gym/--simulation.")
+        #     return
         # configure the engine if in standalone
         engine: Optional[MatrixEngine] = None
         if run_engine:
