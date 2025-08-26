@@ -1,0 +1,189 @@
+name: Build and Publish Jetson Nano Disk Image
+
+on:
+  push:
+    branches:
+      - main
+      - ente
+      - daffy
+    paths:
+      - 'disk_image/create/jetson_nano/private_command.py'
+  pull_request:
+    branches:
+      - main
+      - ente
+      - daffy
+    paths:
+      - 'disk_image/create/jetson_nano/private_command.py'
+
+jobs:
+  check-version-change:
+    runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.check-version.outputs.changed }}
+      new-version: ${{ steps.check-version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if DISK_IMAGE_VERSION changed
+        id: check-version
+        run: |
+          # Extract current DISK_IMAGE_VERSION
+          CURRENT_VERSION=$(grep 'DISK_IMAGE_VERSION = ' disk_image/create/jetson_nano/private_command.py | head -1 | sed 's/.*= *"//' | sed 's/".*//')
+          echo "Current version: $CURRENT_VERSION"
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Check if this is a PR
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, compare with the base branch
+            git fetch origin ${{ github.base_ref }}
+            PREVIOUS_VERSION=$(git show origin/${{ github.base_ref }}:disk_image/create/jetson_nano/private_command.py | grep 'DISK_IMAGE_VERSION = ' | head -1 | sed 's/.*= *"//' | sed 's/".*//' || echo "")
+          else
+            # For pushes, compare with the previous commit
+            PREVIOUS_VERSION=$(git show HEAD~1:disk_image/create/jetson_nano/private_command.py | grep 'DISK_IMAGE_VERSION = ' | head -1 | sed 's/.*= *"//' | sed 's/".*//' || echo "")
+          fi
+          
+          echo "Previous version: $PREVIOUS_VERSION"
+          
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ] && [ -n "$CURRENT_VERSION" ]; then
+            echo "✅ DISK_IMAGE_VERSION changed from '$PREVIOUS_VERSION' to '$CURRENT_VERSION'"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "⏭️  DISK_IMAGE_VERSION unchanged ($CURRENT_VERSION)"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-disk-image:
+    runs-on: ubuntu-latest
+    needs: check-version-change
+    if: needs.check-version-change.outputs.version-changed == 'true'
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qemu-user-static \
+            gdisk \
+            parted \
+            e2fsprogs \
+            unzip \
+            zip \
+            rsync \
+            curl \
+            wget \
+            util-linux \
+            mount \
+            fdisk \
+            udev \
+            coreutils \
+            binutils \
+            grep
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Configure Docker permissions
+        run: |
+          # Ensure Docker daemon is running
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          
+          # Add user to docker group (if not already)
+          sudo usermod -aG docker $USER
+          
+          # Verify Docker is working
+          docker --version
+          docker info
+
+      - name: Install pipx
+        run: |
+          python -m pip install --user pipx
+          python -m pipx ensurepath
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "/opt/pipx_bin" >> $GITHUB_PATH
+
+      - name: Install Duckietown Shell
+        run: |
+          pipx install git+https://github.com/duckietown/duckietown-shell.git
+          echo "DTS location: $(which dts)"
+
+      - name: Configure Duckietown Shell (Non-interactive)
+        env:
+          DTSHELL_COMMANDS: ${{ github.workspace }}
+          DTSHELL_DISTRO: ente
+          DTSHELL_PROFILE: ente
+          DTSHELL_TOKEN: ${{ secrets.DUCKIETOWN_TOKEN }}
+        run: |
+          # Verify installation and environment
+          echo "Environment variables:"
+          echo "DTSHELL_COMMANDS=$DTSHELL_COMMANDS"
+          echo "DTSHELL_DISTRO=$DTSHELL_DISTRO"
+          echo "DTSHELL_PROFILE=$DTSHELL_PROFILE"
+          
+          # Test dts command
+          dts version
+          dts profile list
+
+          cd ${{ github.workspace }}
+          
+          # Create a temporary directory with more space
+          export TMPDIR=/tmp/dts-build
+          mkdir -p $TMPDIR
+          
+          echo "🚀 Starting Jetson Nano 4GB disk image build for version ${{ needs.check-version-change.outputs.new-version }}"
+
+          echo "Debug information"
+          echo "PATH: $PATH"
+          echo "DTS location: $(which dts)"
+          echo "Python location: $(which python)"
+          echo "Working directory: $(pwd)"
+          echo "DTSHELL_PROFILE: $DTSHELL_PROFILE"
+          echo "DTSHELL_COMMANDS: $DTSHELL_COMMANDS"
+          echo "DTSHELL_DISTRO: $DTSHELL_DISTRO"
+          
+          # Run the disk image creation command
+          echo "Starting disk image creation..."
+          dts disk_image create jetson_nano -J 4gb --no-steps license
+          
+          echo "✅ Disk image build completed successfully"
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jetson-nano-build-logs
+          path: |
+            /tmp/dts-build/
+            ~/.duckietown/shell/logs/
+          retention-days: 7
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "🎉 Successfully built and published Jetson Nano disk image version ${{ needs.check-version-change.outputs.new-version }}"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Failed to build Jetson Nano disk image version ${{ needs.check-version-change.outputs.new-version }}"
+          echo "Check the build logs for more information."
