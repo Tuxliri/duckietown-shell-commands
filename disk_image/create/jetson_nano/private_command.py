@@ -493,8 +493,8 @@ class DTCommand(DTCommandAbs):
             run_cmd(["sudo", "losetup", "-c", sd_card.loopdev])
             # show info about disk
             dtslogger.debug("\n" + run_cmd(["sudo", "fdisk", "-l", sd_card.loopdev], True))
-            # fix file system
-            run_cmd(["sudo", "e2fsck", "-f", root_device])
+            # fix file system (non-interactive)
+            run_cmd(["sudo", "e2fsck", "-f", "-p", root_device])
             # resize file system
             run_cmd(["sudo", "resize2fs", root_device])
             # ---
