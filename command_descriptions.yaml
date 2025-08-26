@@ -278,11 +278,6 @@ lx:
       description: Create a new LX
     publish:
       description: Publish a LX to the LX repository
-map:
-  description: DT map commands
-  subcommands:
-    editor:
-      description: Open DT map editor
 matrix:
   description: Duckiematrix (DM) commands
   subcommands:
