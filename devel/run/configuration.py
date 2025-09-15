@@ -180,6 +180,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Location of the synced code on the remote server"
         )
         parser.add_argument(
+            "--sync-flush-direction",
+            default=None,
+            choices=("alpha-to-beta", "beta-to-alpha"),
+            help="After ensuring Mutagen sessions, perform a one-shot flush in this direction",
+        )
+        parser.add_argument(
             "--net",
             "--network_mode",
             dest="network_mode",
