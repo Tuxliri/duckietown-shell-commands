@@ -249,10 +249,10 @@ class DTCommand(DTCommandAbs):
                     local_srcs, destination_srcs = proj.code_paths(root)
                     # compile mountpoints
                     for local_src, destination_src in zip(local_srcs, destination_srcs):
-                        if parsed.read_write:
-                            cc_mountpoints.append((local_src, destination_src, "rw"))
-                        else:
+                        if parsed.read_only:
                             cc_mountpoints.append((local_src, destination_src, "ro"))
+                        else:
+                            cc_mountpoints.append((local_src, destination_src, "rw"))
 
                 # mount launchers
                 if not parsed.no_mount_launchers:
