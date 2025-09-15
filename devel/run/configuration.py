@@ -207,11 +207,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Overrides 'version' (usually taken to be branch name)"
         )
         parser.add_argument(
-            "-RW",
-            "--read_write",
+            "-RO",
+            "--read-only",
+            dest="read_only",
             default=False,
             action="store_true",
-            help="Mount the project in read-write mode",
+            help="Mount the project in read-only mode",
         )
         parser.add_argument("docker_args", nargs="*", default=[])
         # ---
