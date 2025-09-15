@@ -1,6 +1,5 @@
 import glob
 
-import argparse
 import json
 import os
 import shutil
@@ -18,7 +17,6 @@ from dtproject.constants import (
     CANONICAL_ARCH
 )
 from dtproject.types import LayerContainers, ContainerConfiguration
-from utils.cli_utils import ensure_command_is_installed
 from utils.docker_utils import (
     DEFAULT_MACHINE,
     DOCKER_INFO,
@@ -28,7 +26,6 @@ from utils.docker_utils import (
 from utils.misc_utils import human_size, pretty_exc, pretty_yaml, random_string
 from utils.multi_command_utils import MultiCommand
 from utils.resolve import get_duckiebot_host
-from utils.mutagen_sync import MutagenSync, MutagenError, ensure_min_version, sanitize_session_name
 
 from .configuration import DEFAULT_TRUE
 
