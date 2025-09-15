@@ -1,15 +1,29 @@
 import argparse
 import os
 import subprocess
+from typing import List
 
 from dt_shell import DTCommandAbs, dtslogger
 from utils.cli_utils import ensure_command_is_installed
 from utils.docker_utils import DEFAULT_MACHINE
 from utils.misc_utils import sanitize_hostname
 from utils.multi_command_utils import MultiCommand
+from utils.mutagen_sync import MutagenSync, MutagenError, ensure_min_version, sanitize_session_name
 
 DEFAULT_REMOTE_USER = "duckie"
-REMOTE_RSYNC_CODE_LOCATION = "/tmp/code"
+# Default host path on the robot to mirror code into (bind-mount this in containers)
+REMOTE_SYNC_CODE_LOCATION = "/code"
+
+# Default ignore patterns for sync
+DEFAULT_IGNORE: List[str] = [
+    ".git/",
+    ".cache/",
+    "**/__pycache__/",
+    "build/",
+    "install/",
+    "log/",
+    ".vscode-server/",
+]
 
 
 class DTCommand(DTCommandAbs):
@@ -38,13 +52,23 @@ class DTCommand(DTCommandAbs):
         # ---
         # sync
         if parsed.machine == DEFAULT_MACHINE:
-            # only allowed when mounting remotely
-            dtslogger.error("The option -s/--sync can only be used together with -H/--machine")
+            # only allowed when targeting a remote machine
+            dtslogger.error("This command requires -H/--machine to specify the remote host")
             exit(2)
-        # make sure rsync is installed
-        ensure_command_is_installed("rsync")
-        dtslogger.info(f"Syncing code with {parsed.machine.replace('.local', '')}...")
-        remote_path = f"{DEFAULT_REMOTE_USER}@{parsed.machine}:{REMOTE_RSYNC_CODE_LOCATION}/"
+        # make sure Mutagen is installed
+        ensure_command_is_installed(
+            "mutagen",
+            dependant="dts devel run",
+            msg="Please install it with `curl -sS https://webi.sh/mutagen | sh; && \
+                                    source ~/.config/envman/PATH.env` and try again.",
+        )
+        # pre-flight version check
+        try:
+            ensure_min_version("0.17.0")
+        except MutagenError as e:
+            # Older Mutagen versions work with plain-text parsing; continue with a warning
+            dtslogger.warning(str(e))
+        dtslogger.info(f"Ensuring Mutagen sync to {parsed.machine.replace('.local', '')}...")
         # get projects' locations
         projects_to_sync = [parsed.workdir] if parsed.mount is True else []
         # sync secondary projects
@@ -52,11 +76,49 @@ class DTCommand(DTCommandAbs):
             projects_to_sync.extend(
                 [os.path.abspath(os.path.join(os.getcwd(), p.strip())) for p in parsed.mount.split(",")]
             )
-        # run rsync
+        # create or reuse sessions
+        sessions = []
         for project_path in projects_to_sync:
-            cmd = f"rsync --archive {project_path} {remote_path}"
-            _run_cmd(cmd, shell=True)
-        dtslogger.info(f"Code synced!")
+            project_path = os.path.abspath(project_path)
+            project_name = os.path.basename(project_path.rstrip("/"))
+            session_name = sanitize_session_name(f"dts-sync-{project_name}-{parsed.machine}")
+            # ensure remote directory exists
+            remote_host_dir = os.path.join(REMOTE_SYNC_CODE_LOCATION, project_name)
+            _run_cmd([
+                "ssh",
+                f"{DEFAULT_REMOTE_USER}@{parsed.machine}",
+                f"mkdir -p '{remote_host_dir}'"
+            ])
+            # build Mutagen endpoints
+            alpha = project_path
+            beta = f"ssh://{DEFAULT_REMOTE_USER}@{parsed.machine}//{remote_host_dir.lstrip('/')}"
+            try:
+                sync = MutagenSync(name=session_name)
+                session = sync.ensure_session(
+                    alpha=alpha,
+                    beta=beta,
+                    ignore_paths=DEFAULT_IGNORE,
+                    max_staging_file_size="64MiB",
+                )
+                dtslogger.info(f"Session ready: {session.name} ({session.identifier})")
+                sessions.append((sync, session))
+            except MutagenError as e:
+                dtslogger.error(str(e))
+                exit(2)
+        # optional flush
+        if parsed.flush_direction:
+            for sync, _ in sessions:
+                try:
+                    sync.flush(parsed.flush_direction)
+                except MutagenError as e:
+                    dtslogger.warning(f"Flush failed for {sync.name}: {e}")
+            dtslogger.info(f"One-shot flush requested: {parsed.flush_direction}")
+        # optional monitor (monitor the first session)
+        if parsed.monitor and sessions:
+            dtslogger.info("Monitoring Mutagen session. Press Ctrl-C to stop...")
+            sessions[0][0].monitor()
+        else:
+            dtslogger.info("Mutagen sync configured. Use 'mutagen sync monitor' to watch events.")
 
     @staticmethod
     def complete(shell, word, line):
