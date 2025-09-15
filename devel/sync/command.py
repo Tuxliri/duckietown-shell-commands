@@ -1,7 +1,7 @@
 import argparse
 import os
 import subprocess
-from typing import List
+from typing import List, Optional
 
 from dt_shell import DTCommandAbs, dtslogger
 from utils.cli_utils import ensure_command_is_installed
@@ -9,8 +9,9 @@ from utils.docker_utils import DEFAULT_MACHINE
 from utils.misc_utils import sanitize_hostname
 from utils.multi_command_utils import MultiCommand
 from utils.mutagen_sync import MutagenSync, MutagenError, ensure_min_version, sanitize_session_name
+from utils.ssh_setup import ensure_ssh_for_host
+from devel.run.command import REMOTE_USER as DEFAULT_REMOTE_USER
 
-DEFAULT_REMOTE_USER = "duckie"
 # Default host path on the robot to mirror code into (bind-mount this in containers)
 REMOTE_SYNC_CODE_LOCATION = "/code"
 
@@ -55,6 +56,22 @@ class DTCommand(DTCommandAbs):
             # only allowed when targeting a remote machine
             dtslogger.error("This command requires -H/--machine to specify the remote host")
             exit(2)
+        # Ensure SSH key-based auth is configured for the target
+        robot_name: Optional[str] = None
+        # If the given machine is like NAME.local, derive NAME
+        try:
+            if parsed.machine.endswith('.local'):
+                robot_name = parsed.machine.split('.', 1)[0]
+            elif '.' not in parsed.machine:
+                # likely MagicDNS short name
+                robot_name = parsed.machine
+        except Exception:
+            pass
+        try:
+            ensure_ssh_for_host(parsed.machine, user=DEFAULT_REMOTE_USER, robot_name=robot_name)
+        except Exception as e:
+            # Non-fatal: we proceed; SSH may still prompt if needed
+            dtslogger.warning(f"SSH setup encountered an issue: {e}")
         # make sure Mutagen is installed
         ensure_command_is_installed(
             "mutagen",
