@@ -76,7 +76,7 @@ class DTCommand(DTCommandAbs):
         ensure_command_is_installed(
             "mutagen",
             dependant="dts devel run",
-            msg=(
+            custom_msg=(
                 "Please install it with:\n"
                 "    curl -sS https://webi.sh/mutagen | sh\n"
                 "    source ~/.config/envman/PATH.env\n"
