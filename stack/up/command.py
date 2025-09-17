@@ -81,7 +81,7 @@ class DTCommand(DTCommandAbs):
         env["ARCH"] = endpoint_arch
         env["REGISTRY"] = registry_to_use
         # -d/--detach
-        docker_arguments = ["--detach"]
+        docker_arguments = []
         if parsed.detach:
             docker_arguments.append("--detach")
         # process each stack
