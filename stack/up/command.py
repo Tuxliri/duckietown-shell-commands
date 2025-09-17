@@ -86,6 +86,9 @@ class DTCommand(DTCommandAbs):
             docker_arguments.append("--detach")
         # process each stack
         for stack in stacks:
+            # TODO: When processing multiple stacks with a single project name, 
+            # all stacks will use the same project name, which could cause conflicts in Docker Compose.
+            # The project name should be unique per stack or derived from each individual stack name.
             project_name = parsed.project or stack.replace("/", "_")
             # sanitize stack
             stack_name = stack if "/" in stack else f"{stack}/{DEFAULT_STACK}"
