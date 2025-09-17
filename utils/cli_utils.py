@@ -76,7 +76,7 @@ def ask_confirmation(message, default="n", question="Do you confirm?", choices=N
                 return r
 
 
-def ensure_command_is_installed(command, dependant: Optional[str] = None, msg = None):
+def ensure_command_is_installed(command, dependant: Optional[str] = None, custom_msg = None):
     command_path: Optional[str] = which(command)
     if command_path is None:
         extra: str = ""
@@ -88,7 +88,7 @@ def ensure_command_is_installed(command, dependant: Optional[str] = None, msg = 
 
         """
         if msg:
-            msg += "\n" + msg + "\n"
+            msg += "\n" + custom_msg + "\n"
         raise UserError(msg)
     else:
         dtslogger.debug(f"Command '{command}' found: {command_path}")
