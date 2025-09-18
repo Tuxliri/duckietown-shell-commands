@@ -8,6 +8,7 @@ services:
     network_mode: host
     environment:
       ZENOH_ROUTER_ID: duckiebot_router
+      ROS_DOMAIN_ID: 42
 
   camera:
     image: ${REGISTRY}/duckietown/dt-ros2-interface:ente-${ARCH}
@@ -20,6 +21,7 @@ services:
     environment:
       DT_LAUNCHER: sensor-camera
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
@@ -37,6 +39,7 @@ services:
     environment:
       DT_LAUNCHER: sensor-tof
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
@@ -54,6 +57,7 @@ services:
     environment:
       DT_LAUNCHER: sensor-imu
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
@@ -71,6 +75,7 @@ services:
     environment:
       DT_LAUNCHER: sensor-power-button
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
@@ -88,6 +93,7 @@ services:
     environment:
       DT_LAUNCHER: sensor-wheel-encoders
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
@@ -105,6 +111,7 @@ services:
     environment:
       DT_LAUNCHER: actuator-wheels
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
@@ -122,6 +129,7 @@ services:
     environment:
       DT_LAUNCHER: actuator-leds
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
@@ -139,6 +147,7 @@ services:
     environment:
       DT_LAUNCHER: actuator-display
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data/ramdisk/dtps:/dtps
       # avahi socket
@@ -167,6 +176,7 @@ services:
       - seccomp=unconfined
     environment:
       DT_SUPERUSER: 1
+      ROS_DOMAIN_ID: 42
     volumes:
       - /data:/data
       # dtps sockets
