@@ -47,6 +47,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Enable hardware acceleration"
         )
         parser.add_argument(
+            "--browser",
+            default=False,
+            action="store_true",
+            help="Run in browser mode"
+        )
+        parser.add_argument(
             "robot",
             help="Name of the robot to control"
         )

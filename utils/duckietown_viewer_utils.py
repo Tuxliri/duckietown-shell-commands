@@ -11,6 +11,7 @@ from typing import List, Optional, Union, Dict
 
 import dockertown
 import requests
+import webbrowser
 from dockertown import Container
 from dockertown import DockerClient
 from dockertown.exceptions import NoSuchContainer
@@ -176,10 +177,10 @@ def ensure_duckietown_viewer_installed(log_prefix: str = None):
     dtslogger.info(f"{log_prefix}Installation completed successfully!")
 
 
-def launch_viewer(app: str, *, robot: Optional[str] = None, verbose: bool = False, fullscreen: bool = False, menu: bool = False, on_top: bool = False, enable_hardware_acceleration: bool = False, window_args: Optional[WindowArgs] = None) \
+def launch_viewer(app: str, *, robot: Optional[str] = None, verbose: bool = False, fullscreen: bool = False, menu: bool = False, on_top: bool = False, enable_hardware_acceleration: bool = False, browser: bool = False, window_args: Optional[WindowArgs] = None) \
         -> 'DuckietownViewerInstance':
     viewer = DuckietownViewerInstance(verbose=verbose)
-    viewer.start(app, robot, fullscreen, menu, on_top, enable_hardware_acceleration, window_args=window_args)
+    viewer.start(app, robot, fullscreen, menu, on_top, enable_hardware_acceleration, browser, window_args=window_args)
     return viewer
 
 
@@ -202,12 +203,22 @@ class DuckietownViewerInstance:
         self._frontend: Optional[subprocess.Popen] = None
         self._backend_ip: Optional[str] = None
 
-    def start(self, app: str, robot: Optional[str], fullscreen: Optional[bool], menu: Optional[bool], on_top: Optional[bool], enable_hardware_acceleration: Optional[bool], window_args: Optional[WindowArgs] = None):
+    def start(self, app: str, robot: Optional[str], fullscreen: Optional[bool], menu: Optional[bool], on_top: Optional[bool], enable_hardware_acceleration: Optional[bool], browser: bool = False, window_args: Optional[WindowArgs] = None):
         if "url" not in window_args.keys():
             self._start_backend(app, robot)
             self._wait_backend_ready()
-        self._start_frontend(fullscreen, menu, on_top, enable_hardware_acceleration, window_args or {})
-        self._join_frontend()
+        if browser:
+            url = f"http://{self._backend_ip}:{self._BACKEND_REMOTE_PORT}/app/"
+            webbrowser.open(url)
+            dtslogger.info(f"Navigate to {url}")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                dtslogger.info("Exiting...")
+        else:
+            self._start_frontend(fullscreen, menu, on_top, enable_hardware_acceleration, window_args or {})
+            self._join_frontend()
         self._stop()
 
     def _start_backend(self, app: str, robot: str):

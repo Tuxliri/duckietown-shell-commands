@@ -30,6 +30,7 @@ class DTCommand(DTCommandAbs):
             fullscreen=parsed.fullscreen,
             on_top=parsed.on_top,
             enable_hardware_acceleration=parsed.enable_hardware_acceleration,
+            browser=parsed.browser,
             window_args={
                 "height": 418,
                 "icon": get_asset_icon_path(ICON_ASSET),
