@@ -198,7 +198,7 @@ services:
     
   control-mapper:
     image: ${REGISTRY}/duckietown/dt-ros2-interface:ente-${ARCH}
-    container_name: control-mapper
+    container_name: ros-control-mapper
     restart: always
     network_mode: host
     security_opt:
