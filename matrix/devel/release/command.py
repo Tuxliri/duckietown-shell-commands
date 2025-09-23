@@ -70,9 +70,10 @@ class DTCommand(DTCommandAbs):
             return
 
         # read app.json
-        json_fp = os.path.join(build_dir, f"{APP_NAME}.json")
+        capitalized_app_name = APP_NAME.capitalize()
+        json_fp = os.path.join(build_dir, f"{capitalized_app_name}.json")
         if not os.path.isfile(json_fp):
-            dtslogger.error(f"File '{build_dir_rel}/{APP_NAME}.json' not found. "
+            dtslogger.error(f"File '{build_dir_rel}/{capitalized_app_name}.json' not found. "
                             f"Did you build the app?")
             return
 
