@@ -15,7 +15,7 @@ from devel.run.command import REMOTE_USER as DEFAULT_REMOTE_USER
 # Default host path on the robot to mirror code into (bind-mount this in containers)
 REMOTE_SYNC_CODE_LOCATION = "/code"
 
-# Default ignore patterns for sync
+# Default ignore patterns for sync (by default .git is ignored; can be included via --include-git)
 DEFAULT_IGNORE: List[str] = [
     ".git/",
     ".cache/",
@@ -115,10 +115,14 @@ class DTCommand(DTCommandAbs):
             beta = f"ssh://{DEFAULT_REMOTE_USER}@{parsed.machine}//{remote_host_dir.lstrip('/')}"
             try:
                 sync = MutagenSync(name=session_name)
+                # Determine ignore paths (optionally include .git)
+                ignore_paths = list(DEFAULT_IGNORE)
+                if getattr(parsed, "include_git", False):
+                    ignore_paths = [p for p in ignore_paths if p != ".git/"]
                 session = sync.ensure_session(
                     alpha=alpha,
                     beta=beta,
-                    ignore_paths=DEFAULT_IGNORE,
+                    ignore_paths=ignore_paths,
                     max_staging_file_size="64MiB",
                 )
                 dtslogger.info(f"Session ready: {session.name} ({session.identifier})")
