@@ -1,0 +1,11 @@
+services:
+
+  core:
+    image: ${REGISTRY}/duckietown/dt-ros2-core:ente-${ARCH}
+    container_name: core
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /data:/data
+      # avahi socket
+      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
