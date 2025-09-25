@@ -209,7 +209,8 @@ class DuckietownViewerInstance:
             self._wait_backend_ready()
         if browser:
             url = f"http://{self._backend_ip}:{self._BACKEND_REMOTE_PORT}/app/"
-            webbrowser.open(url)
+            if not webbrowser.open(url):
+                dtslogger.warning("Could not open browser.")
             dtslogger.info(f"Navigate to {url}")
             try:
                 while True:
