@@ -208,7 +208,7 @@ class DuckietownViewerInstance:
             self._start_backend(app, robot)
             self._wait_backend_ready()
         if browser:
-            url = f"http://{self._backend_ip}:{self._BACKEND_REMOTE_PORT}/app/"
+            url = f"http://localhost:{self._host_port}/app/"
             if not webbrowser.open(url):
                 dtslogger.warning("Could not open browser.")
             dtslogger.info(f"Navigate to {url}")
@@ -299,7 +299,8 @@ class DuckietownViewerInstance:
         # retrieve container's IP address and port
         container.reload()
         container_ip: str = container.network_settings.ip_address
-
+        self._host_port: str = container.network_settings.ports[f"{self._BACKEND_REMOTE_PORT}/tcp"][0]["HostPort"]
+        
         dtslogger.debug(f"Container '{container_name}' is reachable at the IP address '{container_ip}'")
         # wait for the backend to be ready
         stime: float = time.time()
