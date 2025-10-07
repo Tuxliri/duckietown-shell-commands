@@ -39,8 +39,10 @@ class DTCommand(DTCommandAbs):
         root: str = expanduser(DTShellConstants.ROOT)
         # check if CAROOT is already set and use it
         ca_variable_name = "CAROOT"
+        using_external_caroot = False
         if ca_variable_name in os.environ and os.environ[ca_variable_name]:
             ca_dir: str = os.environ.get(ca_variable_name)
+            using_external_caroot = True
             dtslogger.info(f"An existing local Certificate Authority is already installed in {ca_dir}.")
         else:
             # - make sure the directory exists
@@ -60,7 +62,11 @@ class DTCommand(DTCommandAbs):
         ca_cert: str = join(ca_dir, "rootCA.pem")
         ca_key: str = join(ca_dir, "rootCA-key.pem")
         ca_flag: str = join(ca_dir, "rootCA-key.installed")
-        ca_exists: bool = exists(ca_flag) and exists(ca_cert) and exists(ca_key)
+        # If using external CAROOT, skip flag check as directory might be read-only
+        if using_external_caroot:
+            ca_exists: bool = exists(ca_cert) and exists(ca_key)
+        else:
+            ca_exists: bool = exists(ca_flag) and exists(ca_cert) and exists(ca_key)
 
         # uninstall
         if parsed.uninstall:
@@ -71,11 +77,13 @@ class DTCommand(DTCommandAbs):
             cmd: List[str] = DTCommand._mkcert_command("-uninstall")
             dtslogger.debug(f"Running command:\n\t$ {cmd}\n\tenv: {cmd_env}\n")
             subprocess.check_call(cmd, env=env)
-            try:
-                os.remove(ca_flag)
-                print(f"File '{ca_flag}' deleted successfully.")
-            except OSError as e:
-                print(f"Error occurred while deleting the file: {e}")
+            # Only try to remove flag file if we're not using external CAROOT (might be read-only)
+            if not using_external_caroot:
+                try:
+                    os.remove(ca_flag)
+                    print(f"File '{ca_flag}' deleted successfully.")
+                except OSError as e:
+                    print(f"Error occurred while deleting the file: {e}")
             return
 
         # - make certificate authority and install
@@ -120,8 +128,10 @@ class DTCommand(DTCommandAbs):
             if not installed:
                 raise Exception(f"An error occurred while installing the local CA:\n\n{out}")
             # ---
-            with open(ca_flag, "wt") as fout:
-                fout.write(str(datetime.datetime.now().isoformat()))
+            # Only write the flag file if we're not using external CAROOT (might be read-only)
+            if not using_external_caroot:
+                with open(ca_flag, "wt") as fout:
+                    fout.write(str(datetime.datetime.now().isoformat()))
             dtslogger.info("A new local Certificate Authority was successfully installed.")
         else:
             dtslogger.info(f"Existing local Certificate Authority found in [{ca_dir}]")
