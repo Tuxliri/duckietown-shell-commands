@@ -71,12 +71,22 @@ class DTCommand(DTCommandAbs):
             renderer_key=None,
             frame_rate=None,
             mouse_sensitivity=None,
-            tutorial=False,
             no_pull=parsed.no_pull,
             verbose=False,
         )
 
-        return shell.include.matrix.run.command(shell, [], parsed=run_namespace)
+        if parsed.no_renderer is not None:
+            # FIXME: This is quite hacky, ideally we should be able to have these options have their default values, as if we are calling the command directly
+            run_namespace.embedded = False
+            run_namespace.simulation = False
+            run_namespace.renderers = 1
+            run_namespace.build_assets = False
+            run_namespace.expose_ports = False
+            run_namespace.static_ports = False
+            run_namespace.verbose = True
+            shell.include.matrix.engine.run.command(shell, [], parsed=run_namespace)
+        else:
+            return shell.include.matrix.run.command(shell, [], parsed=run_namespace)
 
 
 
