@@ -74,6 +74,14 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Do not auto-remove containers once done. Produces garbage containers but it is "
                  "useful for debugging.",
         )
+        
+        parser.add_argument(
+            "--no-renderer",
+            action="store_true",
+            default=False,
+            help="Run the matrix without a renderer (engine only)",
+        )
+
         parser.add_argument("-v", "--verbose", default=False, action="store_true", help="Be verbose")
         # ---
         return parser
