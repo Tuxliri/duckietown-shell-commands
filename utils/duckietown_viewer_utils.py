@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -38,7 +39,8 @@ WindowArgs = Dict[str, Union[int, float, str]]
 
 def get_os_family() -> str:
     if sys.platform.startswith('linux'):
-        return "linux"
+        machine = platform.machine()
+        return "linux-arm64" if machine.lower() in ("aarch64", "arm64") else "linux"
     elif sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
         return "windows"
     elif sys.platform.startswith('darwin'):
@@ -91,8 +93,13 @@ def get_path_to_binary(version: str):
         return None
     system: str = get_os_family()
     ext: str
-    if system == "linux":
+    if system.startswith("linux"):
         ext = "AppImage"
+        pattern = os.path.join(app_dir, f"{APP_NAME}-v{version}-*.{ext}")
+        matching_files = glob.glob(pattern)
+        if matching_files:
+            return matching_files[0]
+        return os.path.join(app_dir, f"{APP_NAME}-v{version}.{ext}")
     elif system == "macos":
         ext = "app"
     elif system == "windows":

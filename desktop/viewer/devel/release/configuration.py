@@ -32,7 +32,14 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             "--os-family",
             default=None,
             type=str,
-            help="Release for a given os-family",
+            action="append",
+            help="Release for given os-family(ies). Use multiple times for multiple architectures (e.g., -os linux-x86_64 -os linux-arm64)",
+        )
+        parser.add_argument(
+            "--all-archs",
+            default=False,
+            action="store_true",
+            help="Release all available architectures found in the release directory",
         )
         parser.add_argument(
             "-t",
