@@ -71,6 +71,7 @@ class DTCommand(DTCommandAbs):
             renderer_key=None,
             frame_rate=None,
             mouse_sensitivity=None,
+            no_tutorial=False,
             no_pull=parsed.no_pull,
             verbose=False,
         )

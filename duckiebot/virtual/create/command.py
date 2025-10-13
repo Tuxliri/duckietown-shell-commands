@@ -196,10 +196,10 @@ class DTCommand(DTCommandAbs):
                 dtslogger.info("Docker images successfully transferred!")
             except Exception as e:
                 # warn user
-                dtslogger.warn(f"Docker images failed to be transferred! "
+                dtslogger.warning(f"Docker images failed to be transferred! "
                                f"You will need to run 'dts duckiebot update {parsed.robot}' to "
                                f"complete the setup.")
-                raise e
+                # Don't re-raise the exception - let the robot creation continue
             finally:
                 # stop container
                 remote_docker_engine_container.stop()
