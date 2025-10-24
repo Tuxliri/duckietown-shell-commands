@@ -94,6 +94,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             action="store_true",
             help="Run in verbose mode"
         )
+        parser.add_argument(
+            "--profiler",
+            default=False,
+            action="store_true",
+            help="Enable the profiler"
+        )
         # ---
         return parser
 

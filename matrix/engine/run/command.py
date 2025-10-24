@@ -177,6 +177,9 @@ class MatrixEngine:
         # (Linux only) use network mode host
         if platform.system() == "Linux" and not parsed.expose_ports:
             engine_config["network_mode"] = "host"
+        # profiler
+        if parsed.profiler:
+            engine_config["command"] += ["--profiler"]
         # run engine container
         dtslogger.debug(engine_config)
         self.config = engine_config
