@@ -298,6 +298,10 @@ class DTCommand(DTCommandAbs):
         parsed = kwargs.get("parsed", None)
         if parsed is None:
             parsed = DTCommand.parser.parse_args(args)
+        else:
+            defaults = DTCommand.parser.parse_args([])
+            defaults.__dict__.update(parsed.__dict__)
+            parsed = defaults
         # ---
         engine = DTCommand.make_engine(shell, parsed)
         if engine is None:
