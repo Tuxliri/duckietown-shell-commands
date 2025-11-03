@@ -167,7 +167,7 @@ class DTCommand(DTCommandAbs):
         DTCommand.verify_certificate_validity(ssl_cert, ca_cert)
         
 
-    def verify_certificate_validity(domain_certificate_path: Path, ca_cert_path: Path):
+    def verify_certificate_validity(domain_certificate_path: str, ca_cert_path: str):
         """Verify that the domain certificate is valid against the local Certificate Authority."""
         dtslogger.info("Verifying the domain certificate...")
         cmd_verify: List[str] = [
