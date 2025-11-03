@@ -178,7 +178,7 @@ class DTCommand(DTCommandAbs):
             ca_cert_path,
             domain_certificate_path,
         ]
-        dtslogger.debug(f"Running command:\n\t$ {cmd_verify}\n")
+        dtslogger.debug(f"Running command:\n\t$ {' '.join(str(x) for x in cmd_verify)}\n")
         try:
             out_verify = subprocess.check_output(cmd_verify, stderr=STDOUT).decode("utf-8")
         except subprocess.CalledProcessError as e:
