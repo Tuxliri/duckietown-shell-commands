@@ -36,17 +36,5 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Whether to mount the current project into the container. "
                  "Pass a comma-separated list of paths to mount multiple projects",
         )
-        parser.add_argument(
-            "--monitor",
-            default=False,
-            action="store_true",
-            help="After ensuring sessions, monitor sync activity (Ctrl-C to stop)",
-        )
-        parser.add_argument(
-            "--flush-direction",
-            default=None,
-            choices=("alpha-to-beta", "beta-to-alpha"),
-            help="After ensuring sessions, perform a one-shot flush in this direction",
-        )
         # ---
         return parser

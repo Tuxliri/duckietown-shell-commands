@@ -1,5 +1,6 @@
 import glob
 
+import argparse
 import json
 import os
 import shutil
@@ -17,6 +18,7 @@ from dtproject.constants import (
     CANONICAL_ARCH
 )
 from dtproject.types import LayerContainers, ContainerConfiguration
+from utils.cli_utils import ensure_command_is_installed
 from utils.docker_utils import (
     DEFAULT_MACHINE,
     DOCKER_INFO,
@@ -33,17 +35,6 @@ LAUNCHER_FMT = "dt-launcher-%s"
 DEFAULT_MOUNTS = ["/var/run/avahi-daemon/socket", "/data/"]
 REMOTE_USER = "duckie"
 REMOTE_GROUP = "duckie"
-
-# Default ignore patterns for Mutagen sync
-MUTAGEN_DEFAULT_IGNORE = [
-    ".git/",
-    ".cache/",
-    "**/__pycache__/",
-    "build/",
-    "install/",
-    "log/",
-    ".vscode-server/",
-]
 
 
 def format_docker_host(machine: str) -> str:
@@ -276,10 +267,10 @@ class DTCommand(DTCommandAbs):
                     local_srcs, destination_srcs = proj.code_paths(root)
                     # compile mountpoints
                     for local_src, destination_src in zip(local_srcs, destination_srcs):
-                        if parsed.read_only:
-                            cc_mountpoints.append((local_src, destination_src, "ro"))
-                        else:
+                        if parsed.read_write:
                             cc_mountpoints.append((local_src, destination_src, "rw"))
+                        else:
+                            cc_mountpoints.append((local_src, destination_src, "ro"))
 
                 # mount launchers
                 if not parsed.no_mount_launchers:
@@ -451,24 +442,28 @@ class DTCommand(DTCommandAbs):
 
         # sync
         if parsed.sync:
-            # route to `devel.sync` for managing Mutagen sessions
+            # TODO: this can just become a call to devel.sync
+            # only allowed when mounting remotely
             if parsed.machine == DEFAULT_MACHINE:
                 dtslogger.error("The option -s/--sync can only be used together with -H/--machine")
                 exit(2)
-            sync_args: List[str] = [
-                "-H", parsed.machine,
-                "-C", parsed.workdir,
-            ]
-            # propagate mounts
-            if parsed.mount is True:
-                sync_args += ["-M"]
-            elif isinstance(parsed.mount, str):
-                sync_args += ["-M", parsed.mount]
-            # propagate optional flush direction
-            if getattr(parsed, "sync_flush_direction", None):
-                sync_args += ["--flush-direction", parsed.sync_flush_direction]
-            # call devel.sync
-            shell.include.devel.sync.command(shell, sync_args)
+            # make sure rsync is installed
+            ensure_command_is_installed("rsync", dependant="dts devel run")
+            dtslogger.info(f"Syncing code with {parsed.machine.replace('.local', '')}...")
+            remote_path = f"{parsed.sync_user}@{parsed.machine}:{parsed.sync_destination.rstrip('/')}/"
+            # get projects' locations
+            projects_to_sync = [parsed.workdir] if parsed.mount is True else []
+            # sync secondary projects
+            if isinstance(parsed.mount, str):
+                projects_to_sync.extend(
+                    [os.path.abspath(os.path.join(os.getcwd(), p.strip())) for p in parsed.mount.split(",")]
+                )
+            # run rsync
+            for project_path in projects_to_sync:
+                cmd = (f"rsync --archive --delete --copy-links --chown={REMOTE_USER}:{REMOTE_GROUP} "
+                       f"\"{project_path}\" \"{remote_path}\"")
+                _run_cmd(cmd, shell=True)
+            dtslogger.info(f"Code synced!")
 
         # run
         if parsed.configuration is None:
