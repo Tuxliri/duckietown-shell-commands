@@ -64,7 +64,7 @@ def format_docker_host(machine: str) -> str:
         return machine
     else:
         # Remote machine without protocol, convert to SSH format
-        return f"ssh://duckie@{machine}"
+        return f"tcp://{machine}:2375"
 
 
 class DTCommand(DTCommandAbs):
@@ -324,7 +324,7 @@ class DTCommand(DTCommandAbs):
         # TODO: this can be moved to a separate function or command
         dtslogger.info("Retrieving info about Docker endpoint...")
         epoint = _run_cmd(
-            ["docker", f"-H={format_docker_host(parsed.machine)}", "info", "--format", "{{json .}}"],
+            ["docker", f"-H={format_docker_host(parsed.machine)}", "info", "--format", "json"],
             get_output=True,
             print_output=False,
         )
