@@ -162,6 +162,37 @@ class DTCommand(DTCommandAbs):
             dtslogger.info(f"A new certificate for the domain '{LOCAL_DOMAIN}' was created.")
         else:
             dtslogger.info(f"Existing domain certificate found in [{ssl_dir}]")
+            
+        # verify certificates
+        DTCommand.verify_certificate_validity(ssl_cert, ca_cert)
+        
+
+    @staticmethod
+    def verify_certificate_validity(domain_certificate_path: str, ca_cert_path: str):
+        """Verify that the domain certificate is valid against the local Certificate Authority."""
+        dtslogger.info("Verifying the domain certificate...")
+        cmd_verify: List[str] = [
+            "openssl",
+            "verify",
+            "-CAfile",
+            ca_cert_path,
+            domain_certificate_path,
+        ]
+        dtslogger.debug(f"Running command:\n\t$ {' '.join(str(x) for x in cmd_verify)}\n")
+        try:
+            out_verify = subprocess.check_output(cmd_verify, stderr=STDOUT).decode("utf-8")
+        except subprocess.CalledProcessError as e:
+            dtslogger.error(f"Command {' '.join(cmd_verify)} failed with exit code {e.returncode}:\n{e.output.decode('utf-8')}")
+            raise
+        dtslogger.info(f"Certificate verification result: {out_verify.strip()}")
+        if "OK" not in out_verify:
+            raise Exception("The domain certificate is not valid.")
+        
+        dtslogger.info(f"Domain certificate is valid against CA at {ca_cert_path}!")
+        dtslogger.info(
+            "If using a devcontainer, ensure the root CA is also installed in the host "
+            "system's trust store by running 'mkcert -install' on your host machine."
+        )
 
     @staticmethod
     def _get_mkcert_bin_url() -> str:
