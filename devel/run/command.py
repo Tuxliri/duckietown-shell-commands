@@ -1,5 +1,6 @@
 import glob
 
+import argparse
 import json
 import os
 import shutil
@@ -17,6 +18,7 @@ from dtproject.constants import (
     CANONICAL_ARCH
 )
 from dtproject.types import LayerContainers, ContainerConfiguration
+from utils.cli_utils import ensure_command_is_installed
 from utils.docker_utils import (
     DEFAULT_MACHINE,
     DOCKER_INFO,
@@ -33,17 +35,6 @@ LAUNCHER_FMT = "dt-launcher-%s"
 DEFAULT_MOUNTS = ["/var/run/avahi-daemon/socket", "/data/"]
 REMOTE_USER = "duckie"
 REMOTE_GROUP = "duckie"
-
-# Default ignore patterns for Mutagen sync
-MUTAGEN_DEFAULT_IGNORE = [
-    ".git/",
-    ".cache/",
-    "**/__pycache__/",
-    "build/",
-    "install/",
-    "log/",
-    ".vscode-server/",
-]
 
 
 def format_docker_host(machine: str) -> str:
@@ -73,7 +64,7 @@ def format_docker_host(machine: str) -> str:
         return machine
     else:
         # Remote machine without protocol, convert to SSH format
-        return f"ssh://duckie@{machine}"
+        return f"tcp://{machine}:2375"
 
 
 class DTCommand(DTCommandAbs):
@@ -276,10 +267,10 @@ class DTCommand(DTCommandAbs):
                     local_srcs, destination_srcs = proj.code_paths(root)
                     # compile mountpoints
                     for local_src, destination_src in zip(local_srcs, destination_srcs):
-                        if parsed.read_only:
-                            cc_mountpoints.append((local_src, destination_src, "ro"))
-                        else:
+                        if parsed.read_write:
                             cc_mountpoints.append((local_src, destination_src, "rw"))
+                        else:
+                            cc_mountpoints.append((local_src, destination_src, "ro"))
 
                 # mount launchers
                 if not parsed.no_mount_launchers:
@@ -294,21 +285,15 @@ class DTCommand(DTCommandAbs):
                         if not os.path.isdir(local_launch):
                             continue
 
-                        # respect read-only setting for launcher mounts
-                        if parsed.read_only:
-                            cc_mountpoints.append((local_launch, destination_launch, "ro"))
-                        else:
-                            cc_mountpoints.append((local_launch, destination_launch, "rw"))
+                        cc_mountpoints.append((local_launch, destination_launch, "rw"))
                         # make sure the launchers are executable (local only)
                         if local:
                             # noinspection PyBroadException
                             try:
                                 _run_cmd(["chmod", "a+x", os.path.join(local_launch, "*")], shell=True)
                             except Exception:
-                                dtslogger.warning(
-                                    "An error occurred while making the launchers executable. "
-                                    "Things might not work as expected."
-                                )
+                                dtslogger.warning("An error occurred while making the launchers executable. "
+                                                  "Things might not work as expected.")
 
                 # mount libraries explicitly to support symlinks (local only)
                 if not parsed.no_mount_libraries and local:
@@ -324,10 +309,7 @@ class DTCommand(DTCommandAbs):
                                 os.makedirs(local_mountpoint, exist_ok=True)
                                 real_local_lib = os.path.realpath(local_lib)
                                 destination_lib: str = os.path.join(destination_src, "libraries", f"__{lib_name}")
-                                if parsed.read_only:
-                                    cc_mountpoints.append((real_local_lib, destination_lib, "ro"))
-                                else:
-                                    cc_mountpoints.append((real_local_lib, destination_lib, "rw"))
+                                cc_mountpoints.append((real_local_lib, destination_lib, "rw"))
 
         # create image name
         cc_image = project.image(
@@ -342,7 +324,7 @@ class DTCommand(DTCommandAbs):
         # TODO: this can be moved to a separate function or command
         dtslogger.info("Retrieving info about Docker endpoint...")
         epoint = _run_cmd(
-            ["docker", f"-H={format_docker_host(parsed.machine)}", "info", "--format", "{{json .}}"],
+            ["docker", f"-H={format_docker_host(parsed.machine)}", "info", "--format", "json"],
             get_output=True,
             print_output=False,
         )
@@ -460,27 +442,28 @@ class DTCommand(DTCommandAbs):
 
         # sync
         if parsed.sync:
-            # route to `devel.sync` for managing Mutagen sessions
+            # TODO: this can just become a call to devel.sync
+            # only allowed when mounting remotely
             if parsed.machine == DEFAULT_MACHINE:
                 dtslogger.error("The option -s/--sync can only be used together with -H/--machine")
                 exit(2)
-            sync_args: List[str] = [
-                "-H", parsed.machine,
-                "-C", parsed.workdir,
-            ]
-            # propagate mounts
-            if parsed.mount is True:
-                sync_args += ["-M"]
-            elif isinstance(parsed.mount, str):
-                sync_args += ["-M", parsed.mount]
-            # propagate include-git for Mutagen
-            if getattr(parsed, "sync_include_git", False):
-                sync_args += ["--include-git"]
-            # propagate optional flush direction
-            if getattr(parsed, "sync_flush_direction", None):
-                sync_args += ["--flush-direction", parsed.sync_flush_direction]
-            # call devel.sync
-            shell.include.devel.sync.command(shell, sync_args)
+            # make sure rsync is installed
+            ensure_command_is_installed("rsync", dependant="dts devel run")
+            dtslogger.info(f"Syncing code with {parsed.machine.replace('.local', '')}...")
+            remote_path = f"{parsed.sync_user}@{parsed.machine}:{parsed.sync_destination.rstrip('/')}/"
+            # get projects' locations
+            projects_to_sync = [parsed.workdir] if parsed.mount is True else []
+            # sync secondary projects
+            if isinstance(parsed.mount, str):
+                projects_to_sync.extend(
+                    [os.path.abspath(os.path.join(os.getcwd(), p.strip())) for p in parsed.mount.split(",")]
+                )
+            # run rsync
+            for project_path in projects_to_sync:
+                cmd = (f"rsync --archive --delete --copy-links --chown={REMOTE_USER}:{REMOTE_GROUP} "
+                       f"\"{project_path}\" \"{remote_path}\"")
+                _run_cmd(cmd, shell=True)
+            dtslogger.info(f"Code synced!")
 
         # run
         if parsed.configuration is None:
