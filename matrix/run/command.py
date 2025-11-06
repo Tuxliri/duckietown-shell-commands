@@ -150,6 +150,12 @@ class DTCommand(DTCommandAbs):
             action="store_true",
             help="Disable showing the tutorial"
         )
+        parser.add_argument(
+            "--profiler",
+            default=False,
+            action="store_true",
+            help="Enable the profiler (requires -S/--standalone)"
+        )
         parsed, _ = parser.parse_known_args(args=args)
         return parsed
 
@@ -185,6 +191,10 @@ class DTCommand(DTCommandAbs):
         #     dtslogger.error("You can specify a --delta-t only when running with "
         #                     "--gym/--simulation.")
         #     return
+        # profiler
+        if parsed.profiler and not run_engine:
+            dtslogger.error("You cannot use --profiler without -S/--standalone.")
+            return
         # configure the engine if in standalone
         engine: Optional[MatrixEngine] = None
         if run_engine:
@@ -239,6 +249,8 @@ class DTCommand(DTCommandAbs):
                 pass
             else:
                 app_config += ["--tutorial"]
+            if parsed.profiler:
+                app_config += ["--profiler"]
             # token
             app_config += ["--token", shell.profile.secrets.dt_token]
             # ---

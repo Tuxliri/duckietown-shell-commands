@@ -37,36 +37,6 @@ REMOTE_USER = "duckie"
 REMOTE_GROUP = "duckie"
 
 
-def format_docker_host(machine: str) -> str:
-    """
-    Format a machine name for use as a Docker host parameter.
-    
-    The machine flag can accept various formats:
-    - Local machine: Uses DEFAULT_MACHINE (typically 'unix:///var/run/docker.sock')
-    - Remote hostname: Converts to SSH format 'ssh://duckie@hostname' for remote Docker access
-    - Explicit protocols: Preserves existing protocols like 'ssh://', 'tcp://', 'unix://'
-    - Cloud builders: IP:port combinations are passed through unchanged
-    
-    Args:
-        machine: The machine identifier (hostname, IP, or protocol URI)
-        
-    Returns:
-        Formatted Docker host string suitable for the -H parameter
-    """
-    if machine == DEFAULT_MACHINE:
-        # Local machine, return as-is
-        return machine
-    elif machine.startswith('ssh://'):
-        # Already in SSH format
-        return machine
-    elif '://' in machine:
-        # Already has a protocol (e.g., tcp://, unix://)
-        return machine
-    else:
-        # Remote machine without protocol, convert to SSH format
-        return f"tcp://{machine}:2375"
-
-
 class DTCommand(DTCommandAbs):
     help = "Runs the current project"
 
@@ -189,7 +159,7 @@ class DTCommand(DTCommandAbs):
             _run_cmd(
                 [
                     parsed.runtime,
-                    f"-H={format_docker_host(parsed.machine)}",
+                    "-H=%s" % parsed.machine,
                     "exec",
                     "-it",
                     parsed.name,
@@ -324,7 +294,7 @@ class DTCommand(DTCommandAbs):
         # TODO: this can be moved to a separate function or command
         dtslogger.info("Retrieving info about Docker endpoint...")
         epoint = _run_cmd(
-            ["docker", f"-H={format_docker_host(parsed.machine)}", "info", "--format", "json"],
+            ["docker", "-H=%s" % parsed.machine, "info", "--format", "{{json .}}"],
             get_output=True,
             print_output=False,
         )
@@ -349,7 +319,7 @@ class DTCommand(DTCommandAbs):
                     _run_cmd(
                         [
                             "docker",
-                            f"-H={format_docker_host(parsed.machine)}",
+                            "-H=%s" % parsed.machine,
                             "run",
                             "--rm",
                             "--privileged",
@@ -376,7 +346,7 @@ class DTCommand(DTCommandAbs):
             # noinspection PyBroadException
             try:
                 out = _run_cmd(
-                    ["docker", f"-H={format_docker_host(parsed.machine)}", "images", "--format", "{{.Repository}}:{{.Tag}}"],
+                    ["docker", "-H=%s" % parsed.machine, "images", "--format", "{{.Repository}}:{{.Tag}}"],
                     get_output=True,
                     print_output=False,
                     suppress_errors=True,
@@ -390,7 +360,7 @@ class DTCommand(DTCommandAbs):
                 # noinspection PyBroadException
                 try:
                     _run_cmd(
-                        ["docker", f"-H={format_docker_host(parsed.machine)}", "pull", cc_image],
+                        ["docker", "-H=%s" % parsed.machine, "pull", cc_image],
                         get_output=True,
                         print_output=True,
                         suppress_errors=True,
@@ -469,7 +439,7 @@ class DTCommand(DTCommandAbs):
         if parsed.configuration is None:
             # use docker CLI directly
             exitcode = _run_cmd(
-                [parsed.runtime, f"-H={format_docker_host(parsed.machine)}", "run", "-it"]
+                [parsed.runtime, "-H=%s" % parsed.machine, "run", "-it"]
                 + [f"--net={cc_network_mode}"]
                 + [f"-e={k}={v}" for k, v in cc_environment.items()]
                 + [f"-v={src}:{dst}:{mode}" for src, dst, mode in cc_mountpoints]
@@ -522,7 +492,7 @@ class DTCommand(DTCommandAbs):
                 # run docker-compose
                 exitcode = _run_cmd(
                     [
-                        "docker", f"-H={format_docker_host(parsed.machine)}", "compose",
+                        "docker", f"-H={parsed.machine}", "compose",
                         "-f", f.name,
                         "-p", f"dts-devel-run-{random_string(4)}",
                         "up",
