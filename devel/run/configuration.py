@@ -180,19 +180,6 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Location of the synced code on the remote server"
         )
         parser.add_argument(
-            "--sync-flush-direction",
-            default=None,
-            choices=("alpha-to-beta", "beta-to-alpha"),
-            help="After ensuring Mutagen sessions, perform a one-shot flush in this direction",
-        )
-        parser.add_argument(
-            "--sync-include-git",
-            dest="sync_include_git",
-            default=False,
-            action="store_true",
-            help="Include the .git directory in remote sync",
-        )
-        parser.add_argument(
             "--net",
             "--network_mode",
             dest="network_mode",
@@ -213,20 +200,11 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             default=None,
             help="Overrides 'version' (usually taken to be branch name)"
         )
-        # Mount mode: read-only available, but default remains read-write
         parser.add_argument(
-            "-RO",
-            "--read-only",
-            dest="read_only",
+            "-RW",
+            "--read_write",
             default=False,
             action="store_true",
-            help="Mount the project in read-only mode",
-        )
-        parser.add_argument(
-            "--read-write",
-            "--rw",
-            dest="read_only",
-            action="store_false",
             help="Mount the project in read-write mode",
         )
         parser.add_argument("docker_args", nargs="*", default=[])

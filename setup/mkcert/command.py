@@ -19,6 +19,7 @@ from dtproject.constants import CANONICAL_ARCH
 
 MKCERT_VERSION = "1.4.4"
 LOCAL_DOMAIN = "localhost"
+LOCAL_IP = "127.0.0.1"
 
 
 class DTCommand(DTCommandAbs):
@@ -146,9 +147,9 @@ class DTCommand(DTCommandAbs):
 
         # - make domain certificate
         if not ssl_exists:
-            dtslogger.info(f"Creating local certificate for the domain '{LOCAL_DOMAIN}'...")
+            dtslogger.info(f"Creating local certificate for the domain '{LOCAL_DOMAIN}' and {LOCAL_IP} ...")
             cmd: List[str] = DTCommand._mkcert_command(
-                "-cert-file", ssl_cert, "-key-file", ssl_key, LOCAL_DOMAIN
+                "-cert-file", ssl_cert, "-key-file", ssl_key, LOCAL_DOMAIN, LOCAL_IP
             )
             dtslogger.debug(f"Running command:\n\t$ {cmd}\n\tenv: {cmd_env}\n")
             out = subprocess.check_output(cmd, env=env, stderr=STDOUT).decode("utf-8")
@@ -159,7 +160,7 @@ class DTCommand(DTCommandAbs):
             assert exists(ssl_cert)
             assert exists(ssl_key)
             # ---
-            dtslogger.info(f"A new certificate for the domain '{LOCAL_DOMAIN}' was created.")
+            dtslogger.info(f"A new certificate for the domains '{LOCAL_DOMAIN}' and '{LOCAL_IP}' was created.")
         else:
             dtslogger.info(f"Existing domain certificate found in [{ssl_dir}]")
             
