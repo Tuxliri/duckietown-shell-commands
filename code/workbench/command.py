@@ -107,7 +107,7 @@ class DTCommand(DTCommandAbs):
                 return False
 
         # docker args
-        docker_args: List[str] = []
+        docker_args: List[str] = ["--privileged"]
         # - ros master uri
         docker_args.extend(["-e", f"ROS_MASTER_URI=http://{parsed.robot}.local:11311/"])
 
