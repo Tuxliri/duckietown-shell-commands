@@ -63,7 +63,7 @@ class DTCommand(DTCommandAbs):
         parsed.robot = parsed.robot[0]
         if not re.match("[a-z][a-z0-9]", parsed.robot):
             dtslogger.error(
-                "Robot name can only contain letters and numbers and cannot start with a number.")
+                "Robot name can only contain lowercase letters and numbers and cannot start with a number.")
             return
         # get registry
         registry_to_use: str = get_registry_to_use()
