@@ -164,6 +164,10 @@ class DTCommand(DTCommandAbs):
         parsed = kwargs.get("parsed", None)
         if parsed is None:
             parsed = DTCommand._parse_args(args)
+        else:
+            defaults = DTCommand._parse_args([])
+            defaults.__dict__.update(parsed.__dict__)
+            parsed = defaults
         # ---
         # check for conflicting arguments
         run_engine: bool = parsed.standalone
