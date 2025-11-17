@@ -122,7 +122,7 @@ def step_docker(
 
         # Inspect the container to get its IP (so we can connect to port 2375)
         container_info = local_docker.api.inspect_container("dts-disk-image-aux-docker")
-        container_ip = container_info["NetworkSettings"]["IPAddress"]
+        container_ip = container_info["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
         endpoint_url = f"tcp://{container_ip}:2375"
 
         dtslogger.info(f"DIND is up—connecting to remote Docker at {endpoint_url}")

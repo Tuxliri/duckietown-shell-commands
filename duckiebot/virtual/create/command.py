@@ -155,7 +155,7 @@ class DTCommand(DTCommandAbs):
             time.sleep(1)
             # get IP address of the container
             container_info = local_docker.api.inspect_container(creator_container_name)
-            container_ip = container_info["NetworkSettings"]["IPAddress"]
+            container_ip = container_info["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
             # create remote docker client
             endpoint_url = f"tcp://{container_ip}:2375"
             dtslogger.debug(f"DIND endpoint: {endpoint_url}")
