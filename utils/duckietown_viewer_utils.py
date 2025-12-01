@@ -208,12 +208,14 @@ class DuckietownViewerInstance:
         # internal state
         self._backend: Optional[Container] = None
         self._frontend: Optional[subprocess.Popen] = None
-        self._backend_ip: Optional[str] = None
+        self._backend_url: Optional[str] = None
 
     def start(self, app: str, robot: Optional[str], fullscreen: Optional[bool], menu: Optional[bool], on_top: Optional[bool], enable_hardware_acceleration: Optional[bool], browser: bool = False, window_args: Optional[WindowArgs] = None):
         if "url" not in window_args.keys():
             self._start_backend(app, robot)
-            self._wait_backend_ready()
+            if not self._wait_backend_ready():
+                self._backend.stop()
+                return
         if browser:
             url = f"http://localhost:{self._host_port}/app/"
             if not webbrowser.open(url):
@@ -303,17 +305,18 @@ class DuckietownViewerInstance:
         container_name: str = container.name
         dtslogger.debug(f"Waiting for container '{container_name}' to be ready...")
 
-        # retrieve container's IP address and port
+        # retrieve container's published port on the host
         container.reload()
-        container_ip: str = container.network_settings.ip_address
         self._host_port: str = container.network_settings.ports[f"{self._BACKEND_REMOTE_PORT}/tcp"][0]["HostPort"]
         
-        dtslogger.debug(f"Container '{container_name}' is reachable at the IP address '{container_ip}'")
+        # use localhost with the published host port (more reliable across Docker versions)
+        backend_url = f"localhost:{self._host_port}"
+        dtslogger.debug(f"Container '{container_name}' is reachable at '{backend_url}'")
         # wait for the backend to be ready
         stime: float = time.time()
         timeout: float = 10
         while True:
-            url: str = f"http://{container_ip}:{self._BACKEND_REMOTE_PORT}/"
+            url: str = f"http://{backend_url}/"
             try:
                 response = requests.get(url)
                 dtslogger.debug(f"GET: {url}\n < {response.status_code} {response.reason}")
@@ -325,7 +328,7 @@ class DuckietownViewerInstance:
             # ready
             if response.status_code == 200:
                 dtslogger.debug(f"Container '{container_name}' is ready")
-                self._backend_ip = container_ip
+                self._backend_url = backend_url
                 return True
             # timeout
             if time.time() - stime > timeout:
@@ -337,11 +340,9 @@ class DuckietownViewerInstance:
     def _start_frontend(self, fullscreen: Optional[bool], menu: Optional[bool], on_top: Optional[bool], enable_hardware_acceleration: Optional[bool], args: WindowArgs):
         app_config = ["--no-sandbox"]
         if "url" not in args.keys():
-            if self._backend_ip is None:
+            if self._backend_url is None:
                 raise ValueError("Backend not ready. This should not have happened.")
-            app_config.extend([
-                "--url",
-                f"http://{self._backend_ip}:{self._BACKEND_REMOTE_PORT}/app/"])
+            app_config.extend(["--url", f"http://{self._backend_url}/app/"])
         if fullscreen:
             app_config.append("--fullscreen")
         if menu:
