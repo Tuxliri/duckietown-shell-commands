@@ -120,7 +120,9 @@ class DTCommand(DTCommandAbs):
                 token=token,
                 space=DCSS_SPACE_NAME,
                 exclude="duckiematrix_BackUpThisFolder_ButDontShipItWithYourGame/*,"
-                        "duckiematrix_BurstDebugInformation_DoNotShip/*",
+                        "Duckiematrix_BackUpThisFolder_ButDontShipItWithYourGame/*,"
+                        "duckiematrix_BurstDebugInformation_DoNotShip/*,"
+                        "Duckiematrix_BurstDebugInformation_DoNotShip/*",
                 compress=True
             )
         )
