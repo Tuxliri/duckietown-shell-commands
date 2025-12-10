@@ -81,7 +81,9 @@ class DTCommand(DTCommandAbs):
         with open(json_fp, "rt") as fin:
             meta = json.loads(fin.read())
         release_version = meta["version"]
-        os_family = meta["target"]["operating_system_family"].lower()
+        if os_family.lower() != "webgl":
+            os_family = meta["target"]["operating_system_family"].lower()
+        release = release_version + "-" + os_family
 
         # make sure we have a token
         token: str = parsed.token
@@ -90,7 +92,7 @@ class DTCommand(DTCommandAbs):
 
         # check whether the same version was already released
         if is_version_released(release_version, os_family):
-            dtslogger.warn(f"The version v{release_version} for OS Family '{os_family}' was found "
+            dtslogger.warn(f"The version v{release} was found "
                            f"already on the DCSS, are you re-releasing this version? "
                            f"(use -f/--force to continue)")
             if not parsed.force:
@@ -99,8 +101,9 @@ class DTCommand(DTCommandAbs):
                 dtslogger.warn("Forced!")
 
         # check whether we are releasing an older version
-        latest = get_latest_version(os_family)
-        if versiontuple(latest) > versiontuple(release_version):
+        latest_version = get_latest_version(os_family)
+        latest = latest_version + "-" + os_family
+        if versiontuple(latest_version) > versiontuple(release_version):
             dtslogger.warn(f"The version v{latest} was found on the DCSS, are you releasing "
                            f"an older version? (use -f/--force to continue)")
             if not parsed.force:
@@ -109,7 +112,7 @@ class DTCommand(DTCommandAbs):
                 dtslogger.warn("Forced!")
 
         # upload
-        dtslogger.info(f"Uploading version v{release_version}...")
+        dtslogger.info(f"Uploading version v{release}...")
         zip_remote = remote_zip_obj(release_version, os_family)
         shell.include.data.push.command(
             shell,
@@ -128,10 +131,10 @@ class DTCommand(DTCommandAbs):
         )
 
         # mark this as latest (if needed)
-        if versiontuple(latest) < versiontuple(release_version):
+        if versiontuple(latest_version) < versiontuple(release_version):
             mark_as_latest_version(token, release_version, os_family)
 
-        dtslogger.info(f"Congrats! You just released version v{release_version}.")
+        dtslogger.info(f"Congrats! You just released version v{release}.")
 
     @staticmethod
     def complete(shell, word, line):
