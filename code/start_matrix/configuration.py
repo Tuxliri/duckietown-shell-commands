@@ -69,6 +69,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             action="store_true",
             help="Disable showing the tutorial",
         )
+        parser.add_argument(
+            "--browser",
+            default=False,
+            action="store_true",
+            help="Run in browser mode"
+        )
         # ---
         return parser
 
