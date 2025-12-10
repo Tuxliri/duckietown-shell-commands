@@ -116,15 +116,13 @@ class DTCommand(DTCommandAbs):
         else:
             # local builder is the default
             if parsed.machine is not None:
-                # resolve hostname
-                parsed.machine = get_duckiebot_host(parsed.machine)
+                # cloud Docker endpoints (ip:port) are already explicit and shouldn't
+                # be passed through get_duckiebot_host
+                if ":" not in parsed.machine and "://" not in parsed.machine:
+                    # resolve hostname
+                    parsed.machine = get_duckiebot_host(parsed.machine)
             else:
                 parsed.machine = DEFAULT_MACHINE
-
-        # cloud Docker endpoints (ip:port) are already explicit and shouldn't
-        # be passed through get_duckiebot_host
-        if parsed.machine and ":" not in parsed.machine and "://" not in parsed.machine:
-            parsed.machine = get_duckiebot_host(parsed.machine)
 
         # when we run against a remote machine, we need to sync the code (unless we are using --cloud)
         if parsed.machine != DEFAULT_MACHINE:
@@ -175,8 +173,13 @@ class DTCommand(DTCommandAbs):
 
         # pick the right architecture if not set
         if parsed.arch is None:
-            parsed.arch = get_endpoint_architecture(parsed.machine)
-            dtslogger.info(f"Target architecture automatically set to {parsed.arch}.")
+            try:
+                parsed.arch = get_endpoint_architecture(parsed.machine)
+                dtslogger.info(f"Target architecture automatically set to {parsed.arch}.")
+            except Exception as e:
+                # Fallback to amd64 if architecture detection fails
+                parsed.arch = "amd64"
+                dtslogger.warning(f"Failed to detect architecture ({e}). Defaulting to {parsed.arch}.")
 
         # tag
         version = project.distro
