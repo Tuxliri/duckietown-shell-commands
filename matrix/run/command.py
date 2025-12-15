@@ -244,7 +244,7 @@ class DTCommand(DTCommandAbs):
             else:
                 args = ["--update"]
                 if parsed.browser:
-                    args.append("--webgl")
+                    args.extend(["--os-family", "webgl"])
                     os_family = "webgl"
                 else:
                     os_family = get_os_family()

@@ -48,10 +48,11 @@ class DTCommand(DTCommandAbs):
             help="Install a specific version"
         )
         parser.add_argument(
-            "--webgl",
-            default=False,
-            action="store_true",
-            help="Install the WebGL version"
+            "-os",
+            "--os-family",
+            default=None,
+            type=str,
+            help="Install for a given os-family",
         )
         parsed, _ = parser.parse_known_args(args=args)
         return parsed
@@ -66,7 +67,7 @@ class DTCommand(DTCommandAbs):
             dtslogger.error(f"You need to have the library dt-data-api>=1.0.1, "
                             f"the version {dt_data_api.__version__} was found instead.")
             return
-        os_family = "webgl" if parsed.webgl else get_os_family()
+        os_family = parsed.os_family if parsed.os_family else get_os_family()
         # make sure the app is not already installed
         installed_version = get_most_recent_version_installed(os_family)
         if installed_version is not None and not parsed.update:
