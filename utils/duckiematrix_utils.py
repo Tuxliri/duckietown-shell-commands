@@ -24,7 +24,7 @@ def get_os_family() -> str:
     elif sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
         return "windows"
     elif sys.platform.startswith('darwin'):
-        return "macosx"
+        return "macos"
 
 
 def get_latest_version(os_family: str = ""):
