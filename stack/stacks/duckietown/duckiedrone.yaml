@@ -40,7 +40,7 @@ services:
     privileged: true
     environment:
       DT_SUPERUSER: 1
-      DT_LAUNCHER: sensor-mavlink
+      DT_LAUNCHER: mavlink-proxy
       DTPS_DATA_AVAILABILITY_TIMEOUT: 1
     volumes:
       - /data:/data
