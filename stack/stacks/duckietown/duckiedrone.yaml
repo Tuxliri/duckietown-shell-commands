@@ -32,6 +32,23 @@ services:
       # avahi socket
       - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
 
+  mavlink-proxy:
+    image: ${REGISTRY}/duckietown/dt-duckiebot-interface:ente-${ARCH}
+    container_name: mavlink-proxy
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    environment:
+      DT_SUPERUSER: 1
+      DT_LAUNCHER: sensor-mavlink
+      DTPS_DATA_AVAILABILITY_TIMEOUT: 1
+    volumes:
+      - /data:/data
+      # dtps sockets
+      - /data/ramdisk/dtps:/dtps
+      # avahi socket
+      - /var/run/avahi-daemon/socket:/var/run/avahi-daemon/socket
+
   dashboard:
     image: ${REGISTRY}/duckietown/dt-device-dashboard:ente-${ARCH}
     container_name: dashboard
