@@ -19,7 +19,7 @@ from utils.kvstore_utils import KVStore
 from utils.networking_utils import best_host_for_robot
 from utils.robot_utils import log_event_on_robot
 
-WHEN_NO_DISTRO = "daffy"
+WHEN_NO_DISTRO = "ente"
 DEFAULT_STACKS = "robot/basics,duckietown/{robot_type},ros1/{robot_type}"
 OTHER_IMAGES_TO_UPDATE = [
     # TODO: this is disabled for now, too big for the SD card
