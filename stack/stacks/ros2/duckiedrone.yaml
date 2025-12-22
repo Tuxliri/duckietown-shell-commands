@@ -29,15 +29,15 @@ services:
     depends_on:
       - zenoh-router
 
-  tof:
+  tof-bottom:
     image: ${REGISTRY}/duckietown/dt-ros2-interface:ente-${ARCH}
-    container_name: ros2-tof
+    container_name: ros2-tof-bottom
     restart: unless-stopped
     network_mode: host
     security_opt:
       - seccomp=unconfined
     environment:
-      DT_LAUNCHER: sensor-tof
+      DT_LAUNCHER: sensor-tof-bottom
       DT_SUPERUSER: 1
       ROS_DOMAIN_ID: 42
     volumes:
