@@ -54,6 +54,12 @@ class DTCommand(DTCommandAbs):
             type=str,
             help="Install for a given os-family",
         )
+        parser.add_argument(
+            "--webgl",
+            default=False,
+            action="store_true",
+            help="Install the WebGL version",
+        )
         parsed, _ = parser.parse_known_args(args=args)
         return parsed
 
@@ -67,16 +73,23 @@ class DTCommand(DTCommandAbs):
             dtslogger.error(f"You need to have the library dt-data-api>=1.0.1, "
                             f"the version {dt_data_api.__version__} was found instead.")
             return
-        os_family = parsed.os_family if parsed.os_family else get_os_family()
+        os_family = parsed.os_family
+        webgl = parsed.webgl
+        if os_family:
+            if webgl:
+                dtslogger.error("You cannot use -os/--os-family and --webgl together.")
+                return
+        else:
+            os_family = get_os_family()
         # make sure the app is not already installed
-        installed_version = get_most_recent_version_installed(os_family)
+        installed_version = get_most_recent_version_installed(os_family, webgl)
         if installed_version is not None and not parsed.update:
             dtslogger.info(f"Found version 'v{installed_version}' already installed. \nUse "
                            f"-U/--update to update to the latest version (if any is available).")
             return
         # get latest version available on the DCSS
-        latest_version = get_latest_version(os_family)
-        latest = latest_version + "-" + os_family
+        latest_version = get_latest_version(os_family, webgl)
+        latest = latest_version + "-" + ("webgl" if webgl else os_family)
         # compare installed and latest versions
         if installed_version:
             if installed_version == latest:
@@ -95,7 +108,7 @@ class DTCommand(DTCommandAbs):
         # download
         dtslogger.info(f"Downloading version v{latest}...")
         os.makedirs(app_dir)
-        zip_remote = remote_zip_obj(latest_version, os_family)
+        zip_remote = remote_zip_obj(latest_version, os_family, webgl)
         zip_local = os.path.join(app_dir, f"v{latest}.zip")
         shell.include.data.get.command(
             shell,

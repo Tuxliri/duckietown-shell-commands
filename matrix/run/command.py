@@ -17,12 +17,10 @@ from ..engine.run.command import MatrixEngine
 from utils.duckiematrix_utils import \
     APP_NAME, \
     get_most_recent_version_installed, \
-    get_path_to_binary, \
-    get_path_to_install, \
+    get_path_to_app, \
     get_os_family
 
 EXTERNAL_SHUTDOWN_REQUEST: str = "===REQUESTED-EXTERNAL-SHUTDOWN==="
-IS_MACOS: bool = platform.system() == "Darwin"
 
 
 class DTCommand(DTCommandAbs):
@@ -165,6 +163,13 @@ class DTCommand(DTCommandAbs):
             help="Enable the profiler (requires -S/--standalone)"
         )
         parser.add_argument(
+            "-os",
+            "--os-family",
+            default=None,
+            type=str,
+            help="Run for a given os-family",
+        )
+        parser.add_argument(
             "--browser",
             default=False,
             action="store_true",
@@ -235,21 +240,32 @@ class DTCommand(DTCommandAbs):
             # -------------------------------------------------------------------------------------
 
         # configure renderer
-        app_bin: Optional[str] = None
+        app_path: Optional[str] = None
         app_config: list = []
         terminate_renderer: Optional[Callable] = None
         if run_renderer:
+            os_family = parsed.os_family
+            browser = parsed.browser
+            if os_family:
+                if browser:
+                    dtslogger.error("You cannot use -os/--os-family and --browser together.")
+                    return
+                if os_family not in ("linux", "macos", "windows"):
+                    dtslogger.error(f"Unsupported os-family '{os_family}'. "
+                                    f"Supported values are: linux, macos, windows.")
+                    return
+            else:
+                os_family = get_os_family()
             if parsed.version:
                 version = parsed.version
             else:
                 args = ["--update"]
-                if parsed.browser:
-                    args.extend(["--os-family", "webgl"])
-                    os_family = "webgl"
+                if browser:
+                    args.append("--webgl")
                 else:
-                    os_family = get_os_family()
+                    args.extend(["--os-family", os_family])
                 shell.include.matrix.install.command(shell, args)
-                version = get_most_recent_version_installed(os_family)
+                version = get_most_recent_version_installed(os_family, browser)
             dtslogger.info(f"Configuring Renderer ({version})...")
             dtslogger.debug(f"Will try to run {version}...")
             # make sure the app is installed
@@ -259,9 +275,10 @@ class DTCommand(DTCommandAbs):
                                 f"Use the command `dts matrix install` to download it.")
                 return
             # app configuration
-            app_bin = get_path_to_binary(version)
+            app_path = get_path_to_app(os_family, version, browser)
+            # Unity on Windows/WSL uses "-" to mean "log to stdout"; "/dev/stdout" only exists on Unix-like OSes.
             app_config = [
-                "-logfile", "/dev/stdout"
+                "-logfile", "-" if os_family == "windows" else "/dev/stdout"
             ]
             # graphics API
             if parsed.force_opengl:
@@ -269,8 +286,10 @@ class DTCommand(DTCommandAbs):
             elif parsed.force_vulkan:
                 app_config += ["-force-vulkan"]
             else:
-                # by default, we use Vulkan
-                app_config += ["-force-vulkan"]
+                # by default, we use Vulkan for native platforms
+                # for Windows binaries (WSL), let Unity auto-detect the graphics API
+                if os_family != "windows":
+                    app_config += ["-force-vulkan"]
             # custom engine
             if parsed.engine_hostname is not None:
                 app_config += ["--engine-hostname", parsed.engine_hostname]
@@ -318,10 +337,8 @@ class DTCommand(DTCommandAbs):
                         engine.stop()
                         return
 
-                if parsed.browser:
+                if browser:
                     dtslogger.info("Launching Renderer in browser...")
-                    app_dir = get_path_to_install(version)
-                    app_path = os.path.join(app_dir, "duckiematrix")
                     os.chdir(app_path)
                     host = parsed.host
                     port = parsed.port
@@ -345,7 +362,21 @@ class DTCommand(DTCommandAbs):
                     url += f"tutorial={'true' if not parsed.no_tutorial else 'false'}&"
                     url += f"token={shell.profile.secrets.dt_token}/"
                     server_thread.start()
-                    if not webbrowser.open(url):
+                    browser_opened = False
+                    if os_family == "windows":
+                        try:
+                            url = url.replace("&", "^&")
+                            subprocess.run(
+                                ["cmd.exe", "/c", "start", f"{url}"], 
+                                stderr=subprocess.DEVNULL, 
+                                stdout=subprocess.DEVNULL,
+                            )
+                            browser_opened = True
+                        except Exception:
+                            pass
+                    if not browser_opened:
+                        browser_opened = webbrowser.open(url)
+                    if not browser_opened:
                         dtslogger.warning("Could not open browser.")
                     dtslogger.info(f"Navigate to {url}.")
                     # wait for the engine to terminate
@@ -356,8 +387,8 @@ class DTCommand(DTCommandAbs):
                 else:
                     # run the app
                     dtslogger.info("Launching Renderer...")
-                    app_bin_list = ["open", app_bin, "--args"] if IS_MACOS else [app_bin]
-                    app_cmd = app_bin_list + app_config
+                    app_path_list = ["open", app_path, "--args"] if os_family == "macos" else [app_path]
+                    app_cmd = app_path_list + app_config
                     dtslogger.debug(f"$ > {app_cmd}")
                     time.sleep(2)
                     renderer = subprocess.Popen(app_cmd, stdout=subprocess.PIPE)
@@ -366,7 +397,15 @@ class DTCommand(DTCommandAbs):
                     def terminate_renderer(*_):
                         # noinspection PyBroadException
                         try:
-                            renderer.kill()
+                            if os_family == "windows":
+                                # For Windows binaries in WSL, kill by process name since WSL PIDs don't map to Windows
+                                app_basename = os.path.basename(app_path)
+                                subprocess.run(
+                                    ["taskkill.exe", "/F", "/IM", app_basename],
+                                    stderr=subprocess.DEVNULL,
+                                )
+                            else:
+                                renderer.kill()
                         except Exception:
                             pass
 
