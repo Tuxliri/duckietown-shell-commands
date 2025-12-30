@@ -353,23 +353,11 @@ class DTCommand(DTCommandAbs):
                         engine.join()
                     else:
                         server_thread.join()
-                elif IS_MACOS:
-                    # on MacOS, we open the location of the app
-                    app_location: str = str(Path(app_bin).parent)
-                    dtslogger.info(f"\n===================\n"
-                                   f"  The Duckiematrix app is located at:\n\n\t{app_location}/\n\n"
-                                   f"===================")
-                    dtslogger.info(f"Finder should open this location automatically now.\n"
-                                   f"         If it doesn't, use the command `open {app_location}` from your terminal "
-                                   f"or, navigate to the path using Finder.")
-                    subprocess.call(["open", app_location])
-                    # wait for the engine to terminate
-                    if run_engine:
-                        engine.join()
                 else:
                     # run the app
                     dtslogger.info("Launching Renderer...")
-                    app_cmd = [app_bin] + app_config
+                    app_bin_list = ["open", app_bin, "--args"] if IS_MACOS else [app_bin]
+                    app_cmd = app_bin_list + app_config
                     dtslogger.debug(f"$ > {app_cmd}")
                     time.sleep(2)
                     renderer = subprocess.Popen(app_cmd, stdout=subprocess.PIPE)
