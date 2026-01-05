@@ -555,10 +555,8 @@ def _run_cmd(
     if shell and isinstance(cmd, (list, tuple)):
         cmd = " ".join([str(s) for s in cmd])
     dtslogger.debug("$ %s" % cmd)
-    env = os.environ.copy()
-    env["DOCKER_API_VERSION"] = "1.41"
     if get_output:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=shell, env=env)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=shell)
         proc.wait()
         if proc.returncode != 0:
             if not suppress_errors:
@@ -571,11 +569,11 @@ def _run_cmd(
         return out
     else:
         if return_exitcode:
-            res = subprocess.run(cmd, shell=shell, env=env)
+            res = subprocess.run(cmd, shell=shell)
             return res.returncode
         else:
             try:
-                subprocess.check_call(cmd, shell=shell, env=env)
+                subprocess.check_call(cmd, shell=shell)
             except subprocess.CalledProcessError as e:
                 if not suppress_errors:
                     raise e
