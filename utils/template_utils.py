@@ -39,7 +39,7 @@ class SafeDTTemplate(Template):
                 """
 
     def substitute(self, *args, **kws):
-        if all([re.match("[^A-Z\s]*$", repl) for repl in list(kws.values())]):
+        if all([re.match(r"[^A-Z\s]*$", repl) for repl in list(kws.values())]):
             return super(SafeDTTemplate, self).substitute(*args, **kws)
         else:
             raise InvalidUserInput("The input value does not follow the safe path format: `this_1-is-safe`")
