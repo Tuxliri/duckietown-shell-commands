@@ -28,7 +28,7 @@ You can use --no-steps to exclude some steps:
 
 """
 
-LIST_DEVICES_CMD = "lsblk -p --output NAME,TYPE,SIZE,VENDOR | grep --color=never 'disk\|TYPE'"
+LIST_DEVICES_CMD = r"lsblk -p --output NAME,TYPE,SIZE,VENDOR | grep --color=never 'disk\|TYPE'"
 
 
 WPA_OPEN_NETWORK_CONFIG = """

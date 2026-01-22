@@ -260,8 +260,9 @@ class DTCommand(DTCommandAbs):
                     return
             else:
                 os_family = get_os_family()
-            if parsed.version:
-                version = parsed.version
+            version = parsed.version
+            if version:
+                shell.include.matrix.install.command(shell, ("--version", version))
             else:
                 args = ["--update"]
                 if browser:

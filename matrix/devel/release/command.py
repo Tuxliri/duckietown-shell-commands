@@ -46,6 +46,13 @@ class DTCommand(DTCommandAbs):
             default=None,
             help="(Optional) Duckietown token to use for the upload action",
         )
+        parser.add_argument(
+            "-v",
+            "--version",
+            default=None,
+            type=str,
+            help="Release a specific version",
+        )
         parsed, _ = parser.parse_known_args(args=args)
         return parsed
 
@@ -80,7 +87,8 @@ class DTCommand(DTCommandAbs):
         # load metadata
         with open(json_fp, "rt") as fin:
             meta = json.loads(fin.read())
-        release_version = meta["version"]
+        version = parsed.version
+        release_version = version if version else meta["version"]
         if os_family.lower() != "webgl":
             os_family = meta["target"]["operating_system_family"].lower()
         release = release_version + "-" + os_family
@@ -90,26 +98,27 @@ class DTCommand(DTCommandAbs):
         if token is None:
             token = shell.profile.secrets.dt_token
 
-        # check whether the same version was already released
-        if is_version_released(release_version, os_family):
-            dtslogger.warn(f"The version v{release} was found "
-                           f"already on the DCSS, are you re-releasing this version? "
-                           f"(use -f/--force to continue)")
-            if not parsed.force:
-                return
-            else:
-                dtslogger.warn("Forced!")
+        if not version:
+            # check whether the same version was already released
+            if is_version_released(release_version, os_family):
+                dtslogger.warn(f"The version v{release} was found "
+                            f"already on the DCSS, are you re-releasing this version? "
+                            f"(use -f/--force to continue)")
+                if not parsed.force:
+                    return
+                else:
+                    dtslogger.warn("Forced!")
 
-        # check whether we are releasing an older version
-        latest_version = get_latest_version(os_family)
-        latest = latest_version + "-" + os_family
-        if versiontuple(latest_version) > versiontuple(release_version):
-            dtslogger.warn(f"The version v{latest} was found on the DCSS, are you releasing "
-                           f"an older version? (use -f/--force to continue)")
-            if not parsed.force:
-                return
-            else:
-                dtslogger.warn("Forced!")
+            # check whether we are releasing an older version
+            latest_version = get_latest_version(os_family)
+            latest = latest_version + "-" + os_family
+            if versiontuple(latest_version) > versiontuple(release_version):
+                dtslogger.warn(f"The version v{latest} was found on the DCSS, are you releasing "
+                            f"an older version? (use -f/--force to continue)")
+                if not parsed.force:
+                    return
+                else:
+                    dtslogger.warn("Forced!")
 
         # upload
         dtslogger.info(f"Uploading version v{release}...")
@@ -129,10 +138,10 @@ class DTCommand(DTCommandAbs):
                 compress=True
             )
         )
-
-        # mark this as latest (if needed)
-        if versiontuple(latest_version) < versiontuple(release_version):
-            mark_as_latest_version(token, release_version, os_family)
+        if not version:
+            # mark this as latest (if needed)
+            if versiontuple(latest_version) < versiontuple(release_version):
+                mark_as_latest_version(token, release_version, os_family)
 
         dtslogger.info(f"Congrats! You just released version v{release}.")
 
