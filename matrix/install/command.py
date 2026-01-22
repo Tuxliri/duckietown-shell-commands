@@ -81,21 +81,26 @@ class DTCommand(DTCommandAbs):
                 return
         else:
             os_family = get_os_family()
-        # make sure the app is not already installed
-        installed_version = get_most_recent_version_installed(os_family, webgl)
-        if installed_version is not None and not parsed.update:
-            dtslogger.info(f"Found version 'v{installed_version}' already installed. \nUse "
-                           f"-U/--update to update to the latest version (if any is available).")
-            return
-        # get latest version available on the DCSS
-        latest_version = get_latest_version(os_family, webgl)
-        latest = latest_version + "-" + ("webgl" if webgl else os_family)
-        # compare installed and latest versions
-        if installed_version:
-            if installed_version == latest:
+        version = parsed.version
+        if version:
+            latest_version = version
+        else:
+            # make sure the app is not already installed
+            installed_version = get_most_recent_version_installed(os_family, webgl)
+            if installed_version is not None and not parsed.update:
+                dtslogger.info(f"Found version 'v{installed_version}' already installed. \nUse "
+                            f"-U/--update to update to the latest version (if any is available).")
                 return
-            app_dir = os.path.join(APP_RELEASES_DIR, f"v{installed_version}")
-            subprocess.check_call(["rm", "-rf", app_dir])
+            # get latest version available on the DCSS
+            latest_version = get_latest_version(os_family, webgl)
+        latest = latest_version + "-" + ("webgl" if webgl else os_family)
+        if not version:
+            # compare installed and latest versions
+            if installed_version:
+                if installed_version == latest:
+                    return
+                app_dir = os.path.join(APP_RELEASES_DIR, f"v{installed_version}")
+                subprocess.check_call(["rm", "-rf", app_dir])
         # make sure the same version is not already installed (unless forced)
         app_dir = os.path.join(APP_RELEASES_DIR, f"v{latest}")
         if os.path.isdir(app_dir):
