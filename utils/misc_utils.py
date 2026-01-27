@@ -120,7 +120,8 @@ def get_user_login() -> str:
 
 
 def versiontuple(version: str):
-    return tuple(map(int, (version.split("."))))
+    version_base = version.split("-")[0]
+    return tuple(map(int, (version_base.split("."))))
 
 
 def hide_string(s: str, k: int = 3) -> str:
