@@ -1,5 +1,7 @@
+import json
 import os
 import time
+from collections import Counter
 from pathlib import Path
 
 import argparse
@@ -13,6 +15,8 @@ from threading import Thread
 from typing import Optional, Callable
 
 from dt_shell import DTCommandAbs, dtslogger, DTShell
+from dt_shell.constants import DB_BILLBOARDS
+from dt_shell.database import DTShellDatabase
 from ..engine.run.command import MatrixEngine
 from utils.duckiematrix_utils import \
     APP_NAME, \
@@ -309,6 +313,18 @@ class DTCommand(DTCommandAbs):
                 app_config += ["--profiler"]
             # token
             app_config += ["--token", shell.profile.secrets.dt_token]
+            # billboards
+            billboards_database = DTShellDatabase.open(DB_BILLBOARDS)
+            billboard_names = shell.get_billboard_names(billboards_database)
+            if billboard_names:
+                billboard = shell.get_billboard(billboards_database, billboard_names)
+                if billboard:
+                    app_config += ["--billboard", billboard]
+                app_config += ["--billboards-path", billboards_database.yaml]
+                # convert list with repeated names to JSON with frequencies
+                counter = Counter(billboard_names)
+                billboard_names_dict = dict(counter)
+                app_config += ["--billboard-names", json.dumps(billboard_names_dict)]
             # ---
             dtslogger.info("Renderer configured!")
             # RENDERER is now configured
