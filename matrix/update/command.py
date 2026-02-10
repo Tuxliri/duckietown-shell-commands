@@ -29,6 +29,19 @@ class DTCommand(DTCommandAbs):
             type=str,
             help="Update to a specific version"
         )
+        parser.add_argument(
+            "-os",
+            "--os-family",
+            default=None,
+            type=str,
+            help="Update for a given os-family",
+        )
+        parser.add_argument(
+            "--webgl",
+            default=False,
+            action="store_true",
+            help="Update the WebGL version",
+        )
         parsed, _ = parser.parse_known_args(args=args)
         return parsed
 
@@ -45,6 +58,8 @@ class DTCommand(DTCommandAbs):
                 version=parsed.version,
                 force=parsed.force,
                 update=True,
+                os_family=parsed.os_family,
+                webgl=parsed.webgl,
             )
         )
 
