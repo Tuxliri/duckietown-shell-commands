@@ -50,31 +50,29 @@ def find_images_in_stack(
 
 def step_docker(
     sd_card: VirtualSDCard,
-    out_file_path: str,
+    out_file_path: Callable[[str], str],
     ROOT_PARTITION: str,
     STACKS: list,
     STACKS_BASE_DIR: str,
     DEVICE_PLATFORM: str,
     DIND_IMAGE_NAME: str,
-    cache_step_fn: Callable[[str], None],
     architecture: str,
     registry: str = "docker.io"
 ):
     """
     Mounts the root partition of `sd_card`, starts a Docker-in-Docker (DIND) engine whose
     /var/lib/docker is bind-mounted into the new root, and then pre-pulls every image
-    found in the YAML stacks listed in STACKS. Finally, it stops the DIND container,
-    unmounts, and calls cache_step_fn("docker").
+    found in the YAML stacks listed in STACKS. Finally, it stops the DIND container
+    and unmounts.
     
     Arguments:
         sd_card                - a VirtualSDCard instance, already pointing to out_file_path("img").
-        out_file_path(str)     - a function f(ext) -> absolute path of the built disk image.
+        out_file_path          - a function f(ext) -> absolute path of the built disk image.
         ROOT_PARTITION (str)   - the name of the partition to mount (e.g. "APP").
         STACKS (list of str)   - e.g. ["robot/basics", "duckietown/duckiebot", "ros1/duckiebot"].
         STACKS_BASE_DIR (str)   - base directory where `<stack>.yaml` lives.
         DEVICE_PLATFORM (str)   - e.g. "linux/arm64".
         DIND_IMAGE_NAME (str)   - e.g. "docker:24.0.2-dind".
-        cache_step_fn (callable)   - a callable that takes a string and returns None.
         architecture (str)      - e.g. "arm64v8" used for duckietown-specific tags.
         registry (str)          - Docker registry URL to be used to pull the image from.
     """
@@ -157,9 +155,6 @@ def step_docker(
             dtslogger.info("Finished transferring all stack images.")
         else:
             dtslogger.info("No images found in any STACKS—skipping pre-pull.")
-
-        # 5) Success! Call cache_step_fn so that this step can be cached if requested.
-        cache_step_fn("docker")
 
     except Exception as e:
         # If anything errors out, make sure to unmount and re-raise
