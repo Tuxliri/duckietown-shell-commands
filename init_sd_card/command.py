@@ -41,6 +41,7 @@ from .constants import (
 )
 
 from disk_image.create.jetson_nano.private_command import DISK_IMAGE_VERSION as jetson_disk_image_version
+from disk_image.create.jetson_orin_nano.private_command import DISK_IMAGE_VERSION as jetson_orin_disk_image_version
 
 INIT_SD_CARD_VERSION = "2.1.0"  # incremental number, semantic version
 
@@ -66,6 +67,7 @@ def DISK_IMAGE_VERSION(robot_configuration, experimental=False, version_override
         "raspberry_pi_64": {"stable": "4.0.0", "experimental": "4.0.0"},
         "jetson_nano_4gb": {"stable": jetson_disk_image_version, "experimental": "1.4.3"},
         "jetson_nano_2gb": {"stable": "1.2.2", "experimental": "1.2.2"},
+        "jetson_orin_nano": {"stable": jetson_orin_disk_image_version, "experimental": jetson_orin_disk_image_version},
     }
     board, _ = get_robot_hardware(robot_configuration)
     stream = "stable" if not experimental else "experimental"
@@ -98,6 +100,12 @@ def PLACEHOLDERS_VERSION(robot_configuration, experimental=False, version_overri
             # - experimental
             "-----": "1.1",
         },
+        "jetson_orin_nano": {
+            # - stable
+            jetson_orin_disk_image_version: "2.0",
+            # - experimental
+            "-----": "2.0",
+        },
     }
 
     board, _ = get_robot_hardware(robot_configuration)
@@ -122,6 +130,7 @@ def BASE_DISK_IMAGE(robot_configuration, experimental=False, version_override=No
         "raspberry_pi_64": f"dt-raspios-bookworm-lite-v{DISK_IMAGE_VERSION(robot_configuration, experimental)}-arm64v8",
         "jetson_nano_4gb": f"dt-nvidia-jetpack-v{DISK_IMAGE_VERSION(robot_configuration, experimental)}-4gb",
         "jetson_nano_2gb": f"dt-nvidia-jetpack-v{DISK_IMAGE_VERSION(robot_configuration, experimental)}-2gb",
+        "jetson_orin_nano": f"dt-nvidia-jetpack-orin-v{DISK_IMAGE_VERSION(robot_configuration, experimental)}",
     }
     board, _ = get_robot_hardware(robot_configuration)
     return board_to_disk_image[board]
@@ -670,6 +679,10 @@ def step_setup(shell: DTShell, parsed: argparse.Namespace, data: dict):
         "robot_configuration": parsed.robot_configuration,
         "robot_distro": shell.profile.distro.name,
         "netplan_wifi_networks": _get_netplan_wifi_configuration(parsed),
+        # netplan configurations for v2.0 placeholders (Jetson Orin Nano)
+        "netplan_open_networks": _get_netplan_networks(parsed, "open"),
+        "netplan_wpa_psk_networks": _get_netplan_networks(parsed, "psk"),
+        "netplan_wpa_eap_networks": _get_netplan_networks(parsed, "eap"),
         "sanitize_files": None,
         "stats": json.dumps(
             {
@@ -897,6 +910,34 @@ def _get_netplan_wifi_configuration(parsed) -> str:
         wifis.append(wifi)
     # ---
     return "\n".join(wifis)
+
+
+def _get_netplan_networks(parsed, network_type: str) -> str:
+    """Generate netplan YAML network configurations for Ubuntu 22.04+ (placeholders v2.0)"""
+    networks = _interpret_wifi_string(parsed.wifi)
+    netplan_networks = ""
+    for connection in networks:
+        # EAP-secured network
+        if connection.username is not None:
+            if network_type == "eap":
+                netplan_networks += NETPLAN_WPA_EAP_NETWORK_CONFIG.format(
+                    ssid=connection.ssid,
+                    username=connection.username,
+                    password=connection.password,
+                )
+            continue
+        # PSK-secured network
+        if connection.psk is not None:
+            if network_type == "psk":
+                netplan_networks += NETPLAN_WPA_PSK_NETWORK_CONFIG.format(
+                    ssid=connection.ssid, psk=connection.psk
+                )
+            continue
+        # open network
+        if network_type == "open":
+            netplan_networks += NETPLAN_OPEN_NETWORK_CONFIG.format(ssid=connection.ssid)
+    # ---
+    return netplan_networks
 
 
 def _run_cmd(cmd, get_output=False, shell=False, quiet=False):
