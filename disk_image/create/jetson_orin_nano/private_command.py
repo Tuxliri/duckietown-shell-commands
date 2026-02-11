@@ -17,7 +17,7 @@ from datetime import datetime
 
 from utils.cli_utils import ask_confirmation
 from utils.docker_utils import DEFAULT_REGISTRY
-from utils.duckietown_utils import get_distro_version
+from utils.duckietown_utils import get_distro
 from utils.misc_utils import human_time
 
 from disk_image.create.constants import (
@@ -221,7 +221,7 @@ class DTCommand(DTCommandAbs):
             parsed.output, "cache", out_file_name(ex) + f".{step}"
         )
         # get version
-        distro = get_distro_version(shell)
+        distro = get_distro(shell)
         # create a virtual SD card object
         sd_card = VirtualSDCard(out_file_path("img"), DISK_IMAGE_PARTITION_TABLE)
         # this is the surgey plan that will be performed by the init_sd_card command
