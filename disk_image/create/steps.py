@@ -90,6 +90,15 @@ def step_docker(
         # 2) Start a DIND container whose /var/lib/docker points into the new root
         local_docker = docker.from_env()
 
+        # Stop and remove any leftover DIND container from a previous session
+        try:
+            old_container = local_docker.containers.get("dts-disk-image-aux-docker")
+            dtslogger.warning("Found leftover DIND container from previous session, stopping it...")
+            old_container.stop()
+            old_container.remove(force=True)
+        except docker.errors.NotFound:
+            pass
+
         # Pull the DIND image locally, if needed
         try:
             local_docker.images.get(DIND_IMAGE_NAME)
