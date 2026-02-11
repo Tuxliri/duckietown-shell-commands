@@ -124,10 +124,7 @@ class DTCommand(DTCommandAbs):
         resolved_stacks: Dict[str, str] = {}
         
         for project, stack_fmt in stacks.items():
-            if robot_hardware == "jetson_orin_nano" and project == "duckietown":
-                stack_fmt = stack_fmt.replace("{robot_type}", "duckiebot-orin")
-            else:
-                stack_fmt = stack_fmt.format(robot_type=rtype)
+            stack_fmt = stack_fmt.format(robot_type=rtype)
             resolved_stacks[project] = stack_fmt
         stacks = resolved_stacks
 
