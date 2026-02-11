@@ -78,8 +78,25 @@ store_event() {
     echo "{\"type\": \"${type}\", \"stamp\": ${now}}" > "${EVENTS_DIR}/${now}.json"
 }
 
+install_wifi_driver() {
+    # Install RTL8821CU WiFi driver if the module exists
+    WIFI_MODULE="/lib/modules/$(uname -r)/extra/8821cu.ko"
+    if [ -f "$WIFI_MODULE" ]; then
+        echo "Installing RTL8821CU WiFi driver..."
+        depmod -a
+        modprobe 8821cu
+        echo "8821cu" >> /etc/modules-load.d/8821cu.conf
+        echo "RTL8821CU WiFi driver installed successfully"
+    else
+        echo "RTL8821CU WiFi driver module not found at $WIFI_MODULE, skipping..."
+    fi
+}
+
 run_on_first_boot() {
     echo "Setting up the robot for its first ever boot..."
+
+    # install WiFi driver early (before any steps that might need internet)
+    install_wifi_driver
 
     # setup /etc/hosts
     echo "Setting up the environment..."
