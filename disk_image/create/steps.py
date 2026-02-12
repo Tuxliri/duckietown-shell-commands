@@ -6,7 +6,8 @@ from typing import Set
 import yaml
 import docker
 from disk_image.create.utils import VirtualSDCard
-from disk_image.create.constants import PARTITION_MOUNTPOINT
+from disk_image.create.constants import PARTITION_MOUNTPOINT, DATA_STORAGE_DISK_IMAGE_DIR
+from types import SimpleNamespace
 
 from dt_shell import dtslogger
 from typing import Callable
@@ -181,3 +182,20 @@ def step_docker(
             sd_card.umount_partition(ROOT_PARTITION)
         except Exception:
             pass
+
+def step_push(shell, out_file_name, out_file_path):
+    dtslogger.info("Step BEGIN: push")
+    dtslogger.info("Pushing disk image...")
+    shell.include.data.push.command(
+            shell,
+            [],
+            parsed=SimpleNamespace(
+                file=[out_file_path],
+                object=[os.path.join(DATA_STORAGE_DISK_IMAGE_DIR, out_file_name)],
+                space="public",
+                token=shell.profile.secrets.dt_token,
+                compress=False,
+            ),
+        )
+    dtslogger.info("Done!")
+    dtslogger.info("Step END: push\n")

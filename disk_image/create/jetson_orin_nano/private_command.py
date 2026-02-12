@@ -19,7 +19,7 @@ from utils.cli_utils import ask_confirmation
 from utils.docker_utils import DEFAULT_REGISTRY
 from utils.duckietown_utils import get_distro
 from utils.misc_utils import human_time
-from disk_image.create.steps import step_docker
+from disk_image.create.steps import step_docker, step_push
 
 from disk_image.create.constants import (
     PARTITION_MOUNTPOINT,
@@ -907,36 +907,23 @@ class DTCommand(DTCommandAbs):
         # Step: compress
         if "compress" in parsed.steps:
             dtslogger.info("Step BEGIN: compress")
-            dtslogger.info("Compressing disk image...")
-            run_cmd(["zip", "-j", out_file_path("zip"), out_file_path("img"), out_file_path("json")])
-            dtslogger.info("Done!")
+            if os.path.isfile(out_file_path("zip")):
+                dtslogger.info(f"Reusing existing ZIP file [{out_file_path('zip')}], skipping compression.")
+            else:
+                dtslogger.info("Compressing disk image...")
+                run_cmd(["zip", "-j", out_file_path("zip"), out_file_path("img"), out_file_path("json")])
+                dtslogger.info("Done!")
             cache_step("compress")
             dtslogger.info("Step END: compress\n")
         # Step: compress
         # <------
-        #
-        # ------>
-        # Step: push
+        
         if parsed.push:
             if "compress" not in parsed.steps:
                 dtslogger.warning("The step 'compress' was not performed. No artifacts to push.")
                 return
-            dtslogger.info("Step BEGIN: push")
-            dtslogger.info("Pushing disk image...")
-            shell.include.data.push.command(
-                shell,
-                [],
-                parsed=SimpleNamespace(
-                    file=[out_file_path("zip")],
-                    object=[os.path.join(DATA_STORAGE_DISK_IMAGE_DIR, out_file_name("zip"))],
-                    space="public",
-                    token=shell.get_dt1_token(),
-                ),
-            )
-            dtslogger.info("Done!")
-            dtslogger.info("Step END: push\n")
-        # Step: push
-        # <------
+            step_push(shell, out_file_name("zip"), out_file_path("zip"))
+        
         dtslogger.info(f"Completed in {human_time(time.time() - stime)}")
 
     @staticmethod
