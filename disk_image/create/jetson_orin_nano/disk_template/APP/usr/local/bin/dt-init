@@ -9,9 +9,6 @@ EVENTS_DIR=/data/stats/events
 USAGE_DIR=/data/stats/usage
 ROBOT_TYPE_FILE=${CONFIG_DIR}/robot_type
 ROBOT_HARDWARE_FILE=${CONFIG_DIR}/robot_hardware
-# Nvidia Jetson-based duckiebots need the BOARD GPIO pin #29 (aka sysfs gpio453) to be set to HIGH to keep the DTHut alive
-HUT_RESET_SYSFS_PIN_NO=453
-
 
 detect_root_blockdevs() {
   ROOT_DEV="$(findmnt -n -o SOURCE /)"          # e.g. /dev/mmcblk0p1 or /dev/sda1
@@ -229,19 +226,15 @@ run_on_every_boot() {
         fi
     fi
 
+    export JETSON_MODEL_NAME="JETSON_ORIN_NANO"
+
     echo "Robot type: ${ROBOT_TYPE}"
     echo "Robot hardware: ${ROBOT_HARDWARE}"
-    
-    # set HUT pin to HIGH (NVidia-Jetson-based robots only TODO: the orin might use a different way)
-    if [ $ROBOT_TYPE == "duckiebot" ] && [ $ROBOT_HARDWARE == "jetson_nano" ]; then
-        pin="gpio${HUT_RESET_SYSFS_PIN_NO}"
-        echo ${HUT_RESET_SYSFS_PIN_NO} >/sys/class/gpio/export
-        echo out >/sys/class/gpio/${pin}/direction
-        echo 1 >/sys/class/gpio/${pin}/value
-        echo ${HUT_RESET_SYSFS_PIN_NO} >/sys/class/gpio/unexport
-        echo "HUT pin set to HIGH"
-    else
-        echo "HUT pin not set to HIGH"
+
+    # Enable GPIOs outputs using pinmux (https://github.com/NVIDIA/jetson-gpio/issues/120)
+    if [ $ROBOT_HARDWARE == "jetson_orin_nano" ]; then
+        echo "Setting up pinmux for GPIO outputs..."
+        /usr/local/bin/pinmux_setup.py
     fi
 
     # set HUT pin to HIGH (NVidia-Jetson-orin-based robots only)

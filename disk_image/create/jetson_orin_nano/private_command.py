@@ -117,7 +117,8 @@ APT_PACKAGES_TO_INSTALL = [
     # needed to be able to perform `docker login` on the device
     "gnupg2",
     "pass",
-    "netplan.io"
+    "netplan.io",
+    "busybox",
 ]
 APT_PACKAGES_TO_HOLD = [
     # list here packages that cannot be updated through `chroot`
