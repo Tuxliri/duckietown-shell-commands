@@ -4,7 +4,8 @@ After=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash dt-init
+RemainAfterExit=yes
+ExecStart=/bin/bash /usr/local/bin/dt-init
 
 [Install]
 WantedBy=multi-user.target
