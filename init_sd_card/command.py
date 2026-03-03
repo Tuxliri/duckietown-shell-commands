@@ -794,7 +794,8 @@ def _validate_hostname(hostname: str):
     # The proper regex for RFC 952 should be:
     # ^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$
     # We modify that since we do not wish "hyphen" and "dot" to be valid for ROS reasons.
-    pattern = "^([a-z]|[a-z][a-z0-9]*[a-z0-9])*([a-z]|[a-z][a-z0-9]*[a-z0-9])$"
+    # Must start with a lowercase letter, followed by zero or more lowercase letters or digits.
+    pattern = "^[a-z][a-z0-9]*$"
     if not re.match(pattern, hostname):
         # suggest a valid name with the same logic stated above
         # filter for alphanumeric
