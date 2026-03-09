@@ -3,6 +3,7 @@ import copy
 from typing import Optional, List, Dict
 
 import questionary
+from docker import DockerClient
 from docker.errors import NotFound
 
 from dt_shell import DTCommandAbs, DTShell, dtslogger
@@ -37,6 +38,46 @@ STACKS_TO_LOAD = {
 }
 
 
+def _config_node_directory_exists(client: DockerClient) -> bool:
+    try:
+        # Check if the /data/config/node directory exists
+        client.containers.run(
+            image="alpine:3.23.3",
+            command=["test", "-d", "/data/config/node"],
+            volumes={
+                "/data": {
+                    "bind": "/data",
+                    "mode": "ro"
+                }
+            },
+            remove=True,
+            detach=False
+        )
+    except Exception:
+        return False
+    return True
+
+def _delete_config_node_directory(client: DockerClient) -> None:
+    dtslogger.info("Deleting node configuration directory...")
+    try:
+        # Delete the /data/config/node directory
+        client.containers.run(
+            image="alpine:3.23.3",
+            command=["rm", "-rf", "/data/config/node"],
+            volumes={
+                "/data": {
+                    "bind": "/data",
+                    "mode": "rw"
+                }
+            },
+            remove=True,
+            detach=False
+        )
+        dtslogger.info("Successfully deleted node configuration directory.")
+    except Exception as e:
+        dtslogger.warning(f"Error deleting node configuration directory: {e}")
+
+
 class DTCommand(DTCommandAbs):
     @staticmethod
     def command(shell: DTShell, args):
@@ -63,6 +104,9 @@ class DTCommand(DTCommandAbs):
         )
         parser.add_argument(
             "--robot-hardware", type=str, default=None, help="Force using a specific robot hardware (the -f flag MUST also be selected)"
+        )
+        parser.add_argument(
+            "--reset-node-configs", action="store_true", default=False, help="Reset node configurations after next boot"
         )
 
         parser.add_argument("robot", nargs=1, help="Name of the Robot to update")
@@ -177,6 +221,16 @@ class DTCommand(DTCommandAbs):
         login_client_OLD(client, credentials, registry_to_use, raise_on_error=False)
         # it looks like the update is going to happen, mark the event
         log_event_on_robot(robot, "duckiebot/update")
+
+        if _config_node_directory_exists(client):
+            if parsed.reset_node_configs:
+                _delete_config_node_directory(client)
+            else:
+                choice = input(
+                    "Reset node configurations after next boot? [Y/n]: "
+                )
+                if choice.lower() != "n":
+                    _delete_config_node_directory(client)
 
         # stack/up options
         stack_up_options = ["--machine", robot, "--detach"]
