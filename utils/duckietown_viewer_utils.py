@@ -39,6 +39,14 @@ WindowArgs = Dict[str, Union[int, float, str]]
 
 
 def linux_path_to_windows(path: str) -> Optional[str]:
+    """Convert a Linux (WSL) filesystem path to its Windows equivalent using ``wslpath``.
+
+    Args:
+        path: The Linux/WSL path to convert.
+
+    Returns:
+        The Windows-style path string, or ``None`` if the conversion fails.
+    """
     try:
         result = subprocess.run(
             ["wslpath", "-w", path],
@@ -54,6 +62,14 @@ def linux_path_to_windows(path: str) -> Optional[str]:
 
 
 def get_installed_windows_app_path() -> Optional[str]:
+    """Locate the installed Duckietown Viewer executable on a Windows system (via WSL).
+
+    Looks for the app under ``%LOCALAPPDATA%\\Programs\\<APP_NAME>\\`` and returns
+    the path to the first ``.exe`` that is not an uninstaller.
+
+    Returns:
+        The path to the ``.exe`` binary, or ``None`` if it cannot be found.
+    """
     try:
         result = subprocess.run(
             ["cmd.exe", "/c", "echo %LOCALAPPDATA%"],
@@ -85,6 +101,15 @@ def get_installed_windows_app_path() -> Optional[str]:
 
 
 def get_os_family() -> str:
+    """Detect the current operating-system family.
+
+    Checks for WSL by inspecting ``/proc/version``, then falls back to
+    ``sys.platform`` to distinguish between ``"linux"``, ``"windows"``,
+    and ``"macos"``.
+
+    Returns:
+        One of ``"linux"``, ``"windows"``, or ``"macos"``.
+    """
     if os.path.exists("/proc/version"):
         with open("/proc/version", "r") as f:
             if "microsoft" in f.read().lower():
@@ -98,6 +123,24 @@ def get_os_family() -> str:
 
 
 def resolve_os_family(os_family: str = "", browser: bool = False) -> str:
+    """Resolve and validate the target OS family string.
+
+    When *os_family* is empty the value is auto-detected via :func:`get_os_family`
+    and an ``"-arm64"`` suffix is appended when running on ARM hardware.
+
+    Args:
+        os_family: Explicit OS family override (e.g. ``"linux"``, ``"macos"``,
+            ``"windows"``).  Pass an empty string for auto-detection.
+        browser: Whether the caller intends to open a browser instead of the
+            native app.  Mutually exclusive with a non-empty *os_family*.
+
+    Returns:
+        The resolved OS family string, potentially suffixed with ``"-arm64"``.
+
+    Raises:
+        UserError: If *os_family* and *browser* are both specified, or if
+            *os_family* is not in :data:`SUPPORTED_OS_FAMILIES`.
+    """
     if os_family:
         if browser:
             raise UserError("You cannot use -os/--os-family and --browser together.")
@@ -115,6 +158,16 @@ def resolve_os_family(os_family: str = "", browser: bool = False) -> str:
 
 
 def get_latest_version(os_family: str = "") -> Optional[str]:
+    """Fetch the latest available version string from the Duckietown Cloud Storage.
+
+    Args:
+        os_family: The OS family for which to look up the latest version
+            (e.g. ``"linux"``, ``"macos"``).  An empty string means no suffix.
+
+    Returns:
+        The version string (e.g. ``"1.2.3"``), or ``None`` if no release has
+        been published for the given OS family.
+    """
     # create storage client
     client = DataClient()
     storage = client.storage(DCSS_SPACE_NAME)
@@ -129,6 +182,14 @@ def get_latest_version(os_family: str = "") -> Optional[str]:
 
 
 def get_all_installed_releases(os_family: str = "") -> List[str]:
+    """Return the version strings of all locally installed releases.
+
+    Args:
+        os_family: The OS family to filter releases by.
+
+    Returns:
+        A list of version strings (e.g. ``["1.0.0-linux", "1.2.3-linux"]``).
+    """
     app_dir = os.path.join(APP_RELEASES_DIR, f"*-{os_family}")
     dirs = glob.glob(app_dir)
     version_regex = r"v([0-9]+)\.([0-9]+)\.([0-9]+)"
@@ -138,6 +199,15 @@ def get_all_installed_releases(os_family: str = "") -> List[str]:
 
 
 def get_most_recent_version_installed(os_family: str = "") -> Optional[str]:
+    """Find the highest-versioned locally installed release.
+
+    Args:
+        os_family: The OS family to filter releases by.
+
+    Returns:
+        The version string of the most recent locally installed release
+        (e.g. ``"1.2.3"``), or ``None`` if nothing is installed.
+    """
     releases = get_all_installed_releases(os_family)
     release = None
     for r in releases:
@@ -150,6 +220,16 @@ def get_most_recent_version_installed(os_family: str = "") -> Optional[str]:
 
 
 def get_path_to_install(version: str, os_family: str = ""):
+    """Return the local installation directory for a specific version.
+
+    Args:
+        version: The version string to look up (e.g. ``"1.2.3"``).
+        os_family: The OS family for which the version was installed.
+
+    Returns:
+        The absolute path to the installation directory, or ``None`` if the
+        directory does not exist.
+    """
     app_dir = os.path.join(APP_RELEASES_DIR, f"v{version}-{os_family}")
     if not os.path.isdir(app_dir):
         app_dir = None
@@ -157,6 +237,22 @@ def get_path_to_install(version: str, os_family: str = ""):
 
 
 def get_path_to_binary(version: str, os_family: str = ""):
+    """Return the path to the executable binary for a specific installed version.
+
+    For macOS the path points to the ``.app`` bundle; for Linux it is an
+    ``AppImage``; for Windows it is an ``.exe``.
+
+    Args:
+        version: The version string (e.g. ``"1.2.3"``).
+        os_family: The OS family (``"linux"``, ``"macos"``, or ``"windows"``).
+
+    Returns:
+        The path to the binary, or ``None`` if the installation directory does
+        not exist.
+
+    Raises:
+        ValueError: If *os_family* is not a recognised platform.
+    """
     app_dir = get_path_to_install(version, os_family)
     if app_dir is None:
         return None
@@ -176,6 +272,16 @@ def get_path_to_binary(version: str, os_family: str = ""):
 
 
 def is_version_released(version: str, os_family: str = "") -> bool:
+    """Check whether a specific version has been published on the Duckietown Cloud Storage.
+
+    Args:
+        version: The version string to check (e.g. ``"1.2.3"``).
+        os_family: The OS family for which to check availability.
+
+    Returns:
+        ``True`` if the release archive exists in the cloud storage,
+        ``False`` otherwise.
+    """
     # create storage client
     client = DataClient()
     storage = client.storage(DCSS_SPACE_NAME)
@@ -189,10 +295,27 @@ def is_version_released(version: str, os_family: str = "") -> bool:
 
 
 def remote_zip_obj(version: str, os_family: str = ""):
+    """Build the cloud-storage object path for a release archive.
+
+    Args:
+        version: The version string (e.g. ``"1.2.3"``).
+        os_family: The OS family suffix (e.g. ``"linux"``, ``"macos"``).
+
+    Returns:
+        The object path (key) of the release ``.zip`` on the Duckietown Cloud
+        Storage Service.
+    """
     return os.path.join(DCSS_APP_RELEASES_DIR, f"{APP_NAME}-{version}-{os_family}.zip")
 
 
 def mark_as_latest_version(token: str, version: str, os_family: str):
+    """Upload a pointer file to the cloud storage that designates a version as the latest.
+
+    Args:
+        token: Authentication token for the Duckietown Cloud Storage Service.
+        version: The version string to mark as latest (e.g. ``"1.2.3"``).
+        os_family: The OS family for which this version should be marked latest.
+    """
     # create storage client
     client = DataClient(token)
     storage = client.storage(DCSS_SPACE_NAME)
@@ -203,6 +326,20 @@ def mark_as_latest_version(token: str, version: str, os_family: str):
 
 
 def ensure_duckietown_viewer_installed(os_family: str = "", log_prefix: str = ""):
+    """Download and install the Duckietown Viewer if a newer version is available.
+
+    Compares the most recently installed local version against the latest version
+    published on the cloud storage.  If the local version is absent or outdated
+    the new release is downloaded, extracted, and installed.  For Windows an NSIS
+    silent installer is executed; for macOS the ``.app`` bundle is extracted from
+    a DMG image.
+
+    Args:
+        os_family: The OS family to install the viewer for.  Auto-detected when
+            empty.
+        log_prefix: Prefix string prepended to every log message (defaults to
+            ``" > "``).
+    """
     shell: DTShell = dt_shell.shell
     log_prefix = log_prefix or " > "
 
@@ -304,12 +441,53 @@ def ensure_duckietown_viewer_installed(os_family: str = "", log_prefix: str = ""
 
 def launch_viewer(app: str, *, os_family: str = "", robot: Optional[str] = None, verbose: bool = False, fullscreen: bool = False, menu: bool = False, on_top: bool = False, enable_hardware_acceleration: bool = False, browser: bool = False, window_args: Optional[WindowArgs] = None) \
         -> 'DuckietownViewerInstance':
+    """Create and start a :class:`DuckietownViewerInstance`.
+
+    This is a convenience wrapper that instantiates the viewer, calls
+    :meth:`DuckietownViewerInstance.start`, and returns the instance.
+
+    Args:
+        app: The name of the viewer app to launch (must be one of
+            :attr:`DuckietownViewerInstance._KNOWN_APPS`).
+        os_family: Target OS family string.  Auto-detected when empty.
+        robot: Hostname or IP of the robot to connect to.  Required unless
+            *window_args* contains a ``"url"`` key.
+        verbose: When ``True`` the backend container logs are printed to stdout.
+        fullscreen: Launch the viewer in fullscreen mode.
+        menu: Show the viewer menu bar.
+        on_top: Keep the viewer window on top of all other windows.
+        enable_hardware_acceleration: Enable GPU hardware acceleration in the
+            viewer.
+        browser: Open the viewer URL in the system browser instead of the
+            native app window.
+        window_args: Extra keyword arguments forwarded to the frontend binary
+            as ``--key=value`` CLI flags.  A ``"url"`` key bypasses the
+            backend entirely.
+
+    Returns:
+        The :class:`DuckietownViewerInstance` after it has finished running.
+    """
     viewer = DuckietownViewerInstance(os_family, verbose)
     viewer.start(app, robot, fullscreen, menu, on_top, enable_hardware_acceleration, browser, window_args=window_args)
     return viewer
 
 
 class DuckietownViewerInstance:
+    """Manages the lifecycle of a Duckietown Viewer session.
+
+    A session consists of two components:
+
+    * **Backend** – a Docker container that serves the viewer web application
+      and communicates with a physical or virtual Duckiebot over the network.
+    * **Frontend** – the native desktop application (or browser tab) that
+      renders the viewer UI by connecting to the backend HTTP server.
+
+    Typical usage::
+
+        viewer = DuckietownViewerInstance(os_family="linux")
+        viewer.start("image_viewer", robot="my-duckiebot")
+    """
+
     _BACKEND_DOCKER_IMAGE = "{registry}/duckietown/dt-duckietown-viewer:{distro}"
     _BACKEND_REMOTE_PORT = 8000
     _KNOWN_APPS = [
@@ -322,6 +500,14 @@ class DuckietownViewerInstance:
     ]
 
     def __init__(self, os_family: str = "", verbose: bool = False):
+        """Initialise a new viewer instance.
+
+        Args:
+            os_family: The OS family used to locate the correct frontend binary.
+                Auto-detected when empty.
+            verbose: When ``True`` the Docker backend logs are streamed to
+                stdout in a background thread.
+        """
         self._os_family: str = os_family
         self._verbose: bool = verbose
         # internal state
@@ -330,6 +516,23 @@ class DuckietownViewerInstance:
         self._backend_url: Optional[str] = None
 
     def start(self, app: str, robot: Optional[str], fullscreen: Optional[bool], menu: Optional[bool], on_top: Optional[bool], enable_hardware_acceleration: Optional[bool], browser: bool = False, window_args: Optional[WindowArgs] = None):
+        """Start the viewer backend (if needed) and then the frontend, blocking until exit.
+
+        If *window_args* contains a ``"url"`` key the backend is skipped and
+        the frontend opens that URL directly.  In browser mode the method
+        blocks until a ``KeyboardInterrupt`` is received.
+
+        Args:
+            app: Name of the viewer app to run.
+            robot: Hostname or IP of the target robot.
+            fullscreen: Pass ``--fullscreen`` to the frontend.
+            menu: Pass ``--menu`` to the frontend.
+            on_top: Pass ``--on-top`` to the frontend.
+            enable_hardware_acceleration: Pass ``--enable-hardware-acceleration``
+                to the frontend.
+            browser: Open in the system browser instead of the native app.
+            window_args: Additional ``--key=value`` arguments for the frontend.
+        """
         if "url" not in window_args.keys():
             self._start_backend(app, robot)
             if not self._wait_backend_ready():
@@ -351,6 +554,21 @@ class DuckietownViewerInstance:
         self._stop()
 
     def _start_backend(self, app: str, robot: str):
+        """Pull the backend Docker image and start a container for the given app.
+
+        The container exposes the backend HTTP server on a random host port.
+        An Avahi socket is mounted into the container when available to enable
+        mDNS resolution.  A shutdown hook is registered so the container is
+        stopped when the shell exits.
+
+        Args:
+            app: The viewer app identifier (must be in :attr:`_KNOWN_APPS`).
+            robot: Hostname or IP of the robot to connect to.
+
+        Raises:
+            ValueError: If *app* is not in :attr:`_KNOWN_APPS`.
+            UserError: If the robot's IP address cannot be resolved.
+        """
         import dt_shell
         # make sure the app is known
         if app not in self._KNOWN_APPS:
@@ -420,6 +638,16 @@ class DuckietownViewerInstance:
         self._backend = container
 
     def _wait_backend_ready(self) -> bool:
+        """Poll the backend HTTP server until it returns ``200 OK`` or a timeout is reached.
+
+        Retrieves the dynamically assigned host port from the running container,
+        then sends GET requests to ``http://localhost:<port>/`` at 0.5-second
+        intervals.
+
+        Returns:
+            ``True`` when the backend is ready, ``False`` if the 10-second
+            timeout expires before a successful response is received.
+        """
         container: Container = self._backend
         container_name: str = container.name
         dtslogger.debug(f"Waiting for container '{container_name}' to be ready...")
@@ -457,6 +685,23 @@ class DuckietownViewerInstance:
             time.sleep(0.5)
 
     def _start_frontend(self, fullscreen: Optional[bool], menu: Optional[bool], on_top: Optional[bool], enable_hardware_acceleration: Optional[bool], args: WindowArgs):
+        """Locate the frontend binary and launch it as a subprocess.
+
+        Builds the CLI argument list from the supplied options, resolves the
+        platform-specific binary path, and spawns the process with
+        :class:`subprocess.Popen`.  On macOS ``.app`` bundles are launched via
+        ``open -W``.
+
+        Args:
+            fullscreen: Pass ``--fullscreen`` to the binary.
+            menu: Pass ``--menu`` to the binary.
+            on_top: Pass ``--on-top`` to the binary.
+            enable_hardware_acceleration: Pass ``--enable-hardware-acceleration``
+                to the binary.
+            args: Additional ``key``/``value`` pairs appended as
+                ``--key=value`` flags.  A ``"url"`` key overrides the backend
+                URL.
+        """
         app_config = ["--no-sandbox"]
         if "url" not in args.keys():
             if self._backend_url is None:
@@ -490,10 +735,12 @@ class DuckietownViewerInstance:
         self._frontend = subprocess.Popen(app_cmd)
 
     def _join_frontend(self):
+        """Block until the frontend process exits."""
         self._frontend.wait()
         dtslogger.info("Viewer closed. Exiting...")
 
     def _stop(self):
+        """Terminate the frontend process and stop the backend container."""
         if self._frontend is not None:
             self._frontend.terminate()
         if self._backend is not None:
