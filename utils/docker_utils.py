@@ -246,7 +246,17 @@ def _login_client_OLD(
     """Raises CouldNotLogin"""
     password_hidden = hide_string(password)
     dtslogger.info(f"Logging in to {registry} as {username!r} with secret {password_hidden!r}")
-    res = client.login(username=username, password=password, registry=registry, reauth=True)
+    try:
+        res = client.login(username=username, password=password, registry=registry, reauth=True)
+    except dockerOLD.errors.APIError as e:
+        msg = f"Docker API error while logging in to {registry!r}: {e}"
+        if raise_on_error:
+            dtslogger.error(msg)
+            raise CouldNotLogin(msg) from e
+        else:
+            dtslogger.warning(msg)
+            dtslogger.warning("Continuing because raise_on_error = False.")
+            return
     dtslogger.debug(f"login response: {res}")
     # Status': 'Login Succeeded'
     if res.get("Status", None) == "Login Succeeded":
