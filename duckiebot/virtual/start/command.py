@@ -11,9 +11,8 @@ from utils.misc_utils import pretty_yaml
 from utils.docker_utils import get_endpoint_architecture
 
 DISK_NAME = "root"
-DEVICE_ARCH = get_endpoint_architecture()
 VIRTUAL_FLEET_DIR = os.path.join(USER_DATA_DIR, "virtual_robots")
-VIRTUAL_ROBOT_RUNTIME_IMAGE = "duckietown/dt-virtual-device:{distro}-%s" % DEVICE_ARCH
+VIRTUAL_ROBOT_RUNTIME_IMAGE = "duckietown/dt-virtual-device:{distro}-{arch}"
 
 
 class DTCommand(DTCommandAbs):
@@ -65,7 +64,7 @@ class DTCommand(DTCommandAbs):
             # good
             pass
         # launch robot
-        runtime_image = VIRTUAL_ROBOT_RUNTIME_IMAGE.format(distro=parsed.tag)
+        runtime_image = VIRTUAL_ROBOT_RUNTIME_IMAGE.format(distro=parsed.tag, arch=get_endpoint_architecture())
         if parsed.pull:
             dtslogger.info("Downloading virtual robot runtime...")
             # pull dind image

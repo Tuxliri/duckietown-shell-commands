@@ -15,8 +15,7 @@ from utils.docker_utils import DEFAULT_REGISTRY, get_client_OLD, pull_image_OLD,
 from utils.duckiematrix_utils import \
     APP_NAME
 
-DEVICE_ARCH = get_endpoint_architecture()
-DUCKIEMATRIX_ENGINE_IMAGE_FMT = "{registry}/duckietown/dt-duckiematrix:{distro}-%s" % DEVICE_ARCH
+DUCKIEMATRIX_ENGINE_IMAGE_FMT = "{registry}/duckietown/dt-duckiematrix:{distro}-{arch}"
 EXTERNAL_SHUTDOWN_REQUEST = "===REQUESTED-EXTERNAL-SHUTDOWN==="
 
 DUCKIEMATRIX_ENGINE_IMAGE_CONFIG = {}
@@ -94,7 +93,8 @@ class MatrixEngine:
         # compile engine image name
         engine_image = DUCKIEMATRIX_ENGINE_IMAGE_FMT.format(
             registry=docker_registry,
-            distro=shell.profile.distro.name
+            distro=shell.profile.distro.name,
+            arch=get_endpoint_architecture()
         )
         # engine container configuration
         engine_config = {

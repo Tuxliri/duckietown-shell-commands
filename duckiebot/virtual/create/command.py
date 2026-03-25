@@ -20,7 +20,6 @@ from utils.duckietown_utils import get_robot_types, get_robot_configurations, US
 from utils.misc_utils import pretty_json, pretty_exc
 from ..destroy.command import DTCommand as DestroyVirtualDuckiebotCommand
 
-DEVICE_ARCH = get_endpoint_architecture()
 DISK_NAME = "root"
 DIND_IMAGE_NAME = "docker:24.0-dind"
 VIRTUAL_FLEET_DIR = os.path.join(USER_DATA_DIR, "virtual_robots")
@@ -67,6 +66,8 @@ class DTCommand(DTCommandAbs):
             return
         # get registry
         registry_to_use: str = get_registry_to_use()
+        # get local architecture (deferred from module level to avoid Docker socket access at import time)
+        device_arch: str = get_endpoint_architecture()
         # get the robot configuration
         allowed_configs = get_robot_configurations(parsed.type)
         if parsed.configuration is None:
@@ -122,9 +123,9 @@ class DTCommand(DTCommandAbs):
                 run_cmd(["cp", origin, destination])
                 # add architecture as default value in the stack file
                 dtslogger.debug(
-                    "- Replacing '{ARCH}' with '{ARCH:-%s}' in %s" % (DEVICE_ARCH, destination)
+                    "- Replacing '{ARCH}' with '{ARCH:-%s}' in %s" % (device_arch, destination)
                 )
-                replace_in_file("{ARCH}", "{ARCH:-%s}" % DEVICE_ARCH, destination, open)
+                replace_in_file("{ARCH}", "{ARCH:-%s}" % device_arch, destination, open)
                 # add registry as default value in the stack file
                 dtslogger.debug(
                     "- Replacing '{REGISTRY}' with '{REGISTRY:-%s}' in %s" % (registry_to_use, destination)
@@ -188,7 +189,7 @@ class DTCommand(DTCommandAbs):
                         module=module["module"],
                         version=distro,
                         tag=module["tag"] if "tag" in module else None,
-                        arch=DEVICE_ARCH,
+                        arch=device_arch,
                         registry=module.get("registry", registry_to_use)
                     )
                     pull_docker_image(remote_docker, image)
