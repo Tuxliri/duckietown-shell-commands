@@ -50,6 +50,12 @@ class DTCommand(DTCommandAbs):
             help="Run both engine and renderer"
         )
         parser.add_argument(
+            "--engine-name",
+            default=None,
+            type=str,
+            help="Name for the engine Docker container (default: dts-matrix-engine)"
+        )
+        parser.add_argument(
             "-m",
             "--map",
             default=None,
@@ -69,6 +75,26 @@ class DTCommand(DTCommandAbs):
             default=None,
             type=str,
             help="Hostname or IP address of the engine to connect to"
+        )
+        parser.add_argument(
+            "-ep",
+            "--engine-control-port",
+            default=None,
+            type=int,
+            help="Control port of the engine to connect to (default: 7502)"
+        )
+        parser.add_argument(
+            "-ewp",
+            "--engine-ws-control-port",
+            default=None,
+            type=int,
+            help="WebSocket control port of the engine to connect to (default: 7503, WebGL only)"
+        )
+        parser.add_argument(
+            "--port-offset",
+            default=0,
+            type=int,
+            help="Port offset applied to the engine (sets -ep and -ewp automatically)"
         )
         parser.add_argument(
             "-r",
@@ -298,6 +324,12 @@ class DTCommand(DTCommandAbs):
             # custom engine
             if parsed.engine_hostname is not None:
                 app_config += ["--engine-hostname", parsed.engine_hostname]
+            _ep = parsed.engine_control_port if parsed.engine_control_port is not None else (7502 + parsed.port_offset if parsed.port_offset else None)
+            _ewp = parsed.engine_ws_control_port if parsed.engine_ws_control_port is not None else (7503 + parsed.port_offset if parsed.port_offset else None)
+            if _ep is not None:
+                app_config += ["--engine-control-port", str(_ep)]
+            if _ewp is not None:
+                app_config += ["--engine-ws-control-port", str(_ewp)]
             # custom renderer ID
             if parsed.renderer_id is not None:
                 app_config += ["--renderer-id", f"renderer_{parsed.renderer_id}"]
@@ -375,6 +407,12 @@ class DTCommand(DTCommandAbs):
                         url += f"renderer-key={parsed.renderer_key}&"
                     if parsed.engine_hostname is not None:
                         url += f"engine-hostname={parsed.engine_hostname}&"
+                    _ep = parsed.engine_control_port if parsed.engine_control_port is not None else (7502 + parsed.port_offset if parsed.port_offset else None)
+                    _ewp = parsed.engine_ws_control_port if parsed.engine_ws_control_port is not None else (7503 + parsed.port_offset if parsed.port_offset else None)
+                    if _ep is not None:
+                        url += f"engine-control-port={_ep}&"
+                    if _ewp is not None:
+                        url += f"engine-ws-control-port={_ewp}&"
                     url += f"profiler={'true' if parsed.profiler else 'false'}&"
                     url += f"tutorial={'true' if not parsed.no_tutorial else 'false'}&"
                     url += f"token={shell.profile.secrets.dt_token}/"
