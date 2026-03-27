@@ -48,41 +48,6 @@ safe_grow_rootfs() {
   )
 }
 
-enable_cameras() {
-    echo "=== Enabling cameras ==="
-
-    # config-by-hardware.py searches /boot/dtb/ for a DTB whose embedded
-    # 'compatible' matches the running board. On some board variants (e.g. the
-    # Orin Nano Super, p3767-0005) only /boot/*.dtb exists but not /boot/dtb/*.dtb.
-    # Detect and copy the matching DTB over before calling the tool.
-    BOARD_COMPAT="$(cat /proc/device-tree/compatible | tr '\000' '\n' | head -1)"
-    echo "Board compatible: ${BOARD_COMPAT}"
-
-    DTB_FOUND=""
-    for dtb in /boot/*.dtb; do
-        if [ "$(fdtget "$dtb" / compatible 2>/dev/null | awk '{print $1}')" = "${BOARD_COMPAT}" ]; then
-            DTB_FOUND="$dtb"
-            break
-        fi
-    done
-
-    if [ -n "$DTB_FOUND" ]; then
-        DTB_NAME="$(basename "$DTB_FOUND")"
-        if [ ! -f "/boot/dtb/${DTB_NAME}" ]; then
-            echo "Copying board DTB to /boot/dtb/: ${DTB_NAME}"
-            mkdir -p /boot/dtb
-            cp "$DTB_FOUND" "/boot/dtb/${DTB_NAME}"
-        else
-            echo "Board DTB already present in /boot/dtb/: ${DTB_NAME}"
-        fi
-    else
-        echo "WARNING: No matching DTB found in /boot/ for compatible '${BOARD_COMPAT}'"
-    fi
-
-    /opt/nvidia/jetson-io/config-by-hardware.py -n 2="Camera IMX219 Dual" 2>&1
-    echo "=== config-by-hardware.py exit code: $? ==="
-}
-
 setup_etc_hosts() {
     cat >/etc/hosts <<EOL
 127.0.0.1	localhost
@@ -130,8 +95,6 @@ run_on_first_boot() {
 
     # activate `booting` service
     cp /etc/avahi/services/dt.booting.service.disabled /etc/avahi/services/dt.booting.service
-
-    enable_cameras
 
     # resize root partition to fill the storage device
     safe_grow_rootfs

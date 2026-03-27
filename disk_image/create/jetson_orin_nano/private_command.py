@@ -70,9 +70,9 @@ DISK_IMAGE_PARTITION_TABLE = {
     "reserved": 15,
 }
 DISK_IMAGE_SIZE_GB = 20
-DISK_IMAGE_VERSION = "1.2.6"
+DISK_IMAGE_VERSION = "1.3.1"
 ROOT_PARTITION = "APP"
-JETPACK_VERSION = "6.2.1"
+JETPACK_VERSION = "6.2.1-B"
 DEVICE_ARCH = "arm64v8"
 JETPACK_DISK_IMAGE_NAME = f"nvidia-jetpack-orin-v{JETPACK_VERSION}"
 INPUT_DISK_IMAGE_URL = (
@@ -175,6 +175,13 @@ class DTCommand(DTCommandAbs):
             action="store_true",
             help="Whether to push the final compressed image to the Duckietown Cloud Storage",
         )
+        parser.add_argument(
+            "--input-image",
+            type=str,
+            default=None,
+            help="Path to a pre-downloaded/extracted disk image. "
+                 "If provided, the download step will be skipped and this image will be used as the base.",
+        )
         # parse arguments
         parsed = parser.parse_args(args=args)
         stime = time.time()
@@ -222,6 +229,14 @@ class DTCommand(DTCommandAbs):
         cached_step_file_path = lambda step, ex: os.path.join(
             parsed.output, "cache", out_file_name(ex) + f".{step}"
         )
+        # handle custom input image
+        custom_input_image = None
+        if parsed.input_image is not None:
+            custom_input_image = os.path.abspath(parsed.input_image)
+            if not os.path.isfile(custom_input_image):
+                dtslogger.error(f"Input image file not found: {custom_input_image}")
+                return
+            dtslogger.info(f"Using custom input image: {custom_input_image}")
         # get version
         distro = get_distro(shell)
         # create a virtual SD card object
@@ -229,7 +244,10 @@ class DTCommand(DTCommandAbs):
         # this is the surgey plan that will be performed by the init_sd_card command
         surgery_plan = []
         # define disk image origin (by default we use the official vanilla nVidia JetPack OS)
+        # if a custom input image is provided, use it as the source
         disk_image_origin = in_file_path("img")
+        if custom_input_image is not None:
+            disk_image_origin = custom_input_image
         using_cached_step = False
         # this holds the stats that will be stored in /data/stats/disk_image/build.json
         stats = {
@@ -282,6 +300,13 @@ class DTCommand(DTCommandAbs):
                     continue
                 parsed.steps.discard(step)
             using_cached_step = True
+        # verify that the input image exists before proceeding with create/mount steps
+        if "create" in parsed.steps and not os.path.isfile(disk_image_origin):
+            dtslogger.error(
+                f"Input image file not found at {disk_image_origin}. "
+                f"Please ensure the 'download' step is included or provide a valid --input-image."
+            )
+            return
 
         # ---
         print()
@@ -327,49 +352,63 @@ class DTCommand(DTCommandAbs):
         # Step: download
         if "download" in parsed.steps:
             dtslogger.info("Step BEGIN: download")
-            # clear cache (if requested)
-            if parsed.no_cache:
-                dtslogger.info("Clearing cache")
-                if os.path.exists(parsed.workdir):
-                    if parsed.workdir != TMP_WORKDIR:
-                        dtslogger.warn(
-                            "A custom working directory is being used. The flag "
-                            "--no-cache does not have an effect in this case."
-                        )
-                    else:
-                        shutil.rmtree(parsed.workdir)
-            # create temporary dir
-            run_cmd(["mkdir", "-p", parsed.workdir])
-            # download zip (if necessary)
-            dtslogger.info("Looking for ZIP image file...")
-            if not os.path.isfile(in_file_path("zip")):
-                dtslogger.info("Downloading ZIP image...")
-                shell.include.data.get.command(
-                    shell,
-                    [],
-                    parsed=SimpleNamespace(
-                        file=[in_file_path("zip")],
-                        object=[
-                            os.path.join(
-                                DATA_STORAGE_DISK_IMAGE_DIR, f"{jetpack_disk_image_name}.img.zip"
+            # if a custom input image was provided, copy it to the working directory
+            if custom_input_image is not None:
+                dtslogger.info(f"Using provided input image: {custom_input_image}")
+                # create temporary dir
+                run_cmd(["mkdir", "-p", parsed.workdir])
+                # copy custom image to standard location
+                if not os.path.isfile(in_file_path("img")):
+                    dtslogger.info(f"Copying input image to {in_file_path('img')}...")
+                    copy_file(custom_input_image, in_file_path("img"))
+                    dtslogger.info("Input image copied successfully")
+                else:
+                    dtslogger.info(f"Image already exists at {in_file_path('img')}, skipping copy")
+            else:
+                # standard download flow
+                # clear cache (if requested)
+                if parsed.no_cache:
+                    dtslogger.info("Clearing cache")
+                    if os.path.exists(parsed.workdir):
+                        if parsed.workdir != TMP_WORKDIR:
+                            dtslogger.warn(
+                                "A custom working directory is being used. The flag "
+                                "--no-cache does not have an effect in this case."
                             )
-                        ],
-                        space="public",
-                    ),
-                )
-            else:
-                dtslogger.info(f"Reusing cached ZIP image file [{in_file_path('zip')}].")
-            # unzip (if necessary)
-            if not os.path.isfile(in_file_path("img")):
-                dtslogger.info("Extracting ZIP image...")
-                try:
-                    run_cmd(["unzip", in_file_path("zip"), "-d", parsed.workdir])
-                except KeyboardInterrupt as e:
-                    dtslogger.info("Cleaning up...")
-                    run_cmd(["rm", "-f", in_file_path("img")])
-                    raise e
-            else:
-                dtslogger.info(f"Reusing cached DISK image file [{in_file_path('img')}].")
+                        else:
+                            shutil.rmtree(parsed.workdir)
+                # create temporary dir
+                run_cmd(["mkdir", "-p", parsed.workdir])
+                # download zip (if necessary)
+                dtslogger.info("Looking for ZIP image file...")
+                if not os.path.isfile(in_file_path("zip")):
+                    dtslogger.info("Downloading ZIP image...")
+                    shell.include.data.get.command(
+                        shell,
+                        [],
+                        parsed=SimpleNamespace(
+                            file=[in_file_path("zip")],
+                            object=[
+                                os.path.join(
+                                    DATA_STORAGE_DISK_IMAGE_DIR, f"{jetpack_disk_image_name}.img.zip"
+                                )
+                            ],
+                            space="public",
+                        ),
+                    )
+                else:
+                    dtslogger.info(f"Reusing cached ZIP image file [{in_file_path('zip')}].")
+                # unzip (if necessary)
+                if not os.path.isfile(in_file_path("img")):
+                    dtslogger.info("Extracting ZIP image...")
+                    try:
+                        run_cmd(["unzip", in_file_path("zip"), "-d", parsed.workdir])
+                    except KeyboardInterrupt as e:
+                        dtslogger.info("Cleaning up...")
+                        run_cmd(["rm", "-f", in_file_path("img")])
+                        raise e
+                else:
+                    dtslogger.info(f"Reusing cached DISK image file [{in_file_path('img')}].")
             # ---
             cache_step("download")
             dtslogger.info("Step END: download\n")
@@ -595,40 +634,36 @@ class DTCommand(DTCommandAbs):
                             ROOT_PARTITION,
                             "systemctl set-default multi-user.target 2>/dev/null || true"
                         )
-                        # Fix Nvidia JetPack sources.list by replacing <SOC> placeholder with t234 (Orin Nano SoC)
-                        run_cmd_in_partition(
-                            ROOT_PARTITION,
-                            "sed -i 's|<SOC>|t234|g' /etc/apt/sources.list.d/*.list 2>/dev/null || true"
-                        )
+
                         # update package index
                         run_cmd_in_partition(
                             ROOT_PARTITION,
                             "apt-get update -o Acquire::ForceIPv4=true"
                         )
-                        # Get the exact installed l4t-core version (e.g., 36.4.4-20250616085344)
-                        l4t_core_version = run_cmd_in_partition(
-                            ROOT_PARTITION,
-                            "dpkg-query -W -f='${Version}' nvidia-l4t-core 2>/dev/null || echo ''",
-                            get_output=True
-                        ).strip()
-                        dtslogger.info(f"Installed nvidia-l4t-core version: {l4t_core_version}")
+                        # # Get the exact installed l4t-core version (e.g., 36.4.4-20250616085344)
+                        # l4t_core_version = run_cmd_in_partition(
+                        #     ROOT_PARTITION,
+                        #     "dpkg-query -W -f='${Version}' nvidia-l4t-core 2>/dev/null || echo ''",
+                        #     get_output=True
+                        # ).strip()
+                        # dtslogger.info(f"Installed nvidia-l4t-core version: {l4t_core_version}")
                         
-                        if l4t_core_version:
-                            # Downgrade nvidia packages that require a different l4t-core version
-                            # to versions compatible with the installed l4t-core
-                            nvidia_pkgs_to_fix = [
-                                "nvidia-l4t-jetsonpower-gui-tools",
-                                "nvidia-l4t-nvfancontrol", 
-                                "nvidia-l4t-nvpmodel",
-                                "nvidia-l4t-nvpmodel-gui-tools",
-                            ]
-                            # Downgrade all packages at once to avoid dependency issues
-                            pkgs_with_version = " ".join([f"{pkg}={l4t_core_version}" for pkg in nvidia_pkgs_to_fix])
-                            dtslogger.info(f"Downgrading nvidia packages to {l4t_core_version}")
-                            run_cmd_in_partition(
-                                ROOT_PARTITION,
-                                f"DEBIAN_FRONTEND=noninteractive apt install --yes --allow-downgrades -o Acquire::ForceIPv4=true {pkgs_with_version}",
-                            )
+                        # if l4t_core_version:
+                        #     # Downgrade nvidia packages that require a different l4t-core version
+                        #     # to versions compatible with the installed l4t-core
+                        #     nvidia_pkgs_to_fix = [
+                        #         "nvidia-l4t-jetsonpower-gui-tools",
+                        #         "nvidia-l4t-nvfancontrol", 
+                        #         "nvidia-l4t-nvpmodel",
+                        #         "nvidia-l4t-nvpmodel-gui-tools",
+                        #     ]
+                        #     # Downgrade all packages at once to avoid dependency issues
+                        #     pkgs_with_version = " ".join([f"{pkg}={l4t_core_version}" for pkg in nvidia_pkgs_to_fix])
+                        #     dtslogger.info(f"Downgrading nvidia packages to {l4t_core_version}")
+                        #     run_cmd_in_partition(
+                        #         ROOT_PARTITION,
+                        #         f"DEBIAN_FRONTEND=noninteractive apt install --yes --allow-downgrades -o Acquire::ForceIPv4=true {pkgs_with_version}",
+                        #     )
                         
                         # Now fix any remaining broken dependencies
                         run_cmd_in_partition(
