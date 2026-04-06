@@ -109,6 +109,12 @@ class DTCommand(DTCommandAbs):
             type=str,
             help="Username or UID of the user to impersonate inside VSCode",
         )
+        parser.add_argument(
+            "--gpus",
+            default=None,
+            type=str,
+            help="GPU(s) to expose to the container (e.g. 'all'). Disabled by default.",
+        )
         parser.add_argument("-v", "--verbose", default=False, action="store_true", help="Be verbose")
 
         # get pre-parsed or parse arguments
@@ -256,6 +262,7 @@ class DTCommand(DTCommandAbs):
             mount_secret=secrets,
             verbose=parsed.verbose,
             keep=parsed.keep,
+            gpus=parsed.gpus,
         )
         dtslogger.debug(f"Calling 'vscode/run' with arguments: {str(vscode_namespace)}")
         shell.include.vscode.run.command(shell, [], parsed=vscode_namespace)

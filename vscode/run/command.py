@@ -105,6 +105,12 @@ class DTCommand(DTCommandAbs):
         )
         parser.add_argument("--image", default=None, help="VSCode image to run")
         parser.add_argument(
+            "--gpus",
+            default=None,
+            type=str,
+            help="GPU(s) to expose to the container (e.g. 'all'). Disabled by default.",
+        )
+        parser.add_argument(
             "workdir", default=os.getcwd(), help="Directory containing the workspace to open", nargs=1
         )
 
@@ -225,6 +231,7 @@ class DTCommand(DTCommandAbs):
             "image": image,
             "detach": True,
             "remove": not parsed.keep,
+            **({"gpus": parsed.gpus} if parsed.gpus else {}),
             "envs": {
                 "HOST_UID": identity,
                 "DT_SUPERUSER": 1,
