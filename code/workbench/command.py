@@ -19,11 +19,7 @@ class DTCommand(DTCommandAbs):
         if not parsed:
             parsed = DTCommand.parser.parse_args(args=args)
         else:
-            # combine given args with default values
-            default_parsed = DTCommand.parser.parse_args(args=[])
-            for k, v in parsed.__dict__.items():
-                setattr(default_parsed, k, v)
-            parsed = default_parsed
+            parsed = DTCommand._resolve_parsed([], parsed)
 
         # -R/--robot is required when -H/--machine is not provided
         if not parsed.robot:

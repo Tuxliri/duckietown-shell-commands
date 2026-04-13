@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 
@@ -15,30 +14,8 @@ class DTCommand(DTCommandAbs):
     help = f'Shows information about the installed version of the {APP_NAME} application'
 
     @staticmethod
-    def _parse_args(args):
-        # configure arguments
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "-v",
-            "--version",
-            default=None,
-            type=str,
-            help="Show info about a specific version"
-        )
-        parser.add_argument(
-            "--webgl",
-            default=False,
-            action="store_true",
-            help="Show info about the WebGL version"
-        )
-        parsed, _ = parser.parse_known_args(args=args)
-        return parsed
-
-    @staticmethod
     def command(shell: DTShell, args, **kwargs):
-        parsed = kwargs.get("parsed", None)
-        if parsed is None:
-            parsed = DTCommand._parse_args(args)
+        parsed = DTCommand._resolve_parsed(args, kwargs.get("parsed"))
         # ---
         os_family = "webgl" if parsed.webgl else get_os_family()
         version = parsed.version if parsed.version else get_most_recent_version_installed(os_family)

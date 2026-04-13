@@ -178,8 +178,11 @@ class DTCommand(DTCommandAbs):
             choices=["2gb", "4gb"],
             help="Nvidia Jetson Nano Developer Kit version",
         )
-        # parse arguments
-        parsed = parser.parse_args(args=args)
+        parsed = kwargs.get("parsed", None)
+        if parsed is None:
+            parsed = parser.parse_args(args=args)
+        else:
+            parsed = DTCommand._resolve_parsed([], parsed, parser=parser)
         stime = time.time()
         # check given steps
         f = lambda s: len(s) > 0
