@@ -121,11 +121,9 @@ class DTCommand(DTCommandAbs):
             if remaining:
                 dtslogger.info(f"I do not know about these arguments: {remaining}")
         else:
-            # combine given args with default values
-            default_parsed = parser.parse_args(args=["workdir"])
-            for k, v in parsed.__dict__.items():
-                setattr(default_parsed, k, v)
-            parsed = default_parsed
+            parsed = DTCommand._resolve_parsed([], parsed, parser=parser)
+            if not isinstance(parsed.workdir, list):
+                parsed.workdir = [parsed.workdir]
         # ---
 
         # variables

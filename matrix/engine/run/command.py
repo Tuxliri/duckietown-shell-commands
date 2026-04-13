@@ -305,9 +305,7 @@ class DTCommand(DTCommandAbs):
     def make_engine(shell: DTShell, parsed: argparse.Namespace, use_defaults: bool = False) \
             -> Optional[MatrixEngine]:
         if use_defaults:
-            defaults = DTCommand.parser.parse_args([])
-            defaults.__dict__.update(parsed.__dict__)
-            parsed = defaults
+            parsed = DTCommand._resolve_parsed([], parsed)
         # create engine
         engine = MatrixEngine()
         configured = engine.configure(shell, parsed)
@@ -318,13 +316,7 @@ class DTCommand(DTCommandAbs):
 
     @staticmethod
     def command(shell: DTShell, args, **kwargs):
-        parsed = kwargs.get("parsed", None)
-        if parsed is None:
-            parsed = DTCommand.parser.parse_args(args)
-        else:
-            defaults = DTCommand.parser.parse_args([])
-            defaults.__dict__.update(parsed.__dict__)
-            parsed = defaults
+        parsed = DTCommand._resolve_parsed(args, kwargs.get("parsed"))
         # ---
         engine = DTCommand.make_engine(shell, parsed)
         if engine is None:

@@ -55,9 +55,7 @@ class DTCommand(DTCommandAbs):
         )
 
         # Get pre-parsed or parse arguments
-        parsed = kwargs.get("parsed", None)
-        if not parsed:
-            parsed, _ = parser.parse_known_args(args=args)
+        parsed = DTCommand._resolve_parsed(args, kwargs.get("parsed"), parser=parser)
         parsed.robot = parsed.robot[0]
         robot_hostname = sanitize_hostname(parsed.robot)
         robot_ip = get_duckiebot_ip(parsed.robot)
