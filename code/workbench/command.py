@@ -107,6 +107,19 @@ class DTCommand(DTCommandAbs):
         # - ros master uri
         docker_args.extend(["-e", f"ROS_MASTER_URI=http://{parsed.robot}.local:11311/"])
 
+        # attach to running container if --shell is requested
+        if parsed.shell:
+            project = DTProject(parsed.workdir, recipe.path)
+            container_name = "dts-run-{:s}".format(project.name)
+            dtslogger.info(f"Attaching shell to running container '{container_name}'...")
+            run_namespace: SimpleNamespace = SimpleNamespace(
+                workdir=parsed.workdir,
+                machine=parsed.machine,
+                name=container_name,
+                subcommand="attach",
+            )
+            return shell.include.devel.run.command(shell, [], parsed=run_namespace)
+
         # Run the project using 'devel run'
         run_namespace: SimpleNamespace = SimpleNamespace(
             workdir=parsed.workdir,
