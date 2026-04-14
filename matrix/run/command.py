@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import shlex
 from collections import Counter
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from socket import AF_INET, SOCK_STREAM
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from threading import Thread
 from typing import Optional, Callable
+from shutil import which
 
 from dt_shell import DTCommandAbs, dtslogger, DTShell
 from dt_shell.constants import DB_BILLBOARDS
@@ -49,6 +51,10 @@ class DTCommand(DTCommandAbs):
         # - links VS renderer-only
         if len(parsed.links) > 0 and not run_engine:
             dtslogger.error("You cannot use --links without -S/--standalone.")
+            return
+        # - xvfb only works for native renderer mode
+        if parsed.xvfb and parsed.browser:
+            dtslogger.error("You cannot use --xvfb together with --browser.")
             return
         # make sure the map is given (in standalone mode)
         if run_engine and not parsed.map and not parsed.sandbox:
@@ -248,6 +254,15 @@ class DTCommand(DTCommandAbs):
                     dtslogger.info("Launching Renderer...")
                     app_path_list = ["open", app_path, "--args"] if os_family == "macos" else [app_path]
                     app_cmd = app_path_list + app_config
+                    if parsed.xvfb:
+                        if os_family != "linux":
+                            dtslogger.error("--xvfb is supported only with Linux native renderer binaries.")
+                            return
+                        if which("xvfb-run") is None:
+                            dtslogger.error("Could not find 'xvfb-run' in PATH. Install xvfb first.")
+                            return
+                        xvfb_args = shlex.split(parsed.xvfb_args or "")
+                        app_cmd = ["xvfb-run", "-a", *xvfb_args, *app_cmd]
                     dtslogger.debug(f"$ > {app_cmd}")
                     time.sleep(2)
                     renderer = subprocess.Popen(app_cmd, stdout=subprocess.PIPE)

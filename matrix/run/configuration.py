@@ -176,6 +176,18 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Run in browser mode",
         )
         parser.add_argument(
+            "--xvfb",
+            default=False,
+            action="store_true",
+            help="Run the native renderer under xvfb-run (Linux only)",
+        )
+        parser.add_argument(
+            "--xvfb-args",
+            default="-screen 0 1920x1080x24",
+            type=str,
+            help="Additional arguments passed to xvfb-run",
+        )
+        parser.add_argument(
             "--host",
             default="localhost",
             type=str,
