@@ -183,9 +183,9 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
         )
         parser.add_argument(
             "--xvfb-args",
-            default="-screen 0 1920x1080x24",
+            default='-s "-screen 0 1920x1080x24"',
             type=str,
-            help="Additional arguments passed to xvfb-run",
+            help="Additional arguments passed to xvfb-run (use -s to set Xvfb server args)",
         )
         parser.add_argument(
             "--host",

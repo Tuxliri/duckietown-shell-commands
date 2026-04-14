@@ -262,7 +262,7 @@ class DTCommand(DTCommandAbs):
                             dtslogger.error("Could not find 'xvfb-run' in PATH. Install xvfb first.")
                             return
                         xvfb_args = shlex.split(parsed.xvfb_args or "")
-                        app_cmd = ["xvfb-run", "-a", *xvfb_args, *app_cmd]
+                        app_cmd = ["xvfb-run", "-a", *xvfb_args, "--", *app_cmd]
                     dtslogger.debug(f"$ > {app_cmd}")
                     time.sleep(2)
                     renderer = subprocess.Popen(app_cmd, stdout=subprocess.PIPE)
