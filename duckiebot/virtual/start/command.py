@@ -100,7 +100,7 @@ class DTCommand(DTCommandAbs):
                 ["14551", "14551", "udp"],   # Ardupilot SITL
                 ["7447", "7447", "tcp"],     # ROS2 zenoh bridge
                 ["8080", "8080", "tcp"],     # Dashboard (HTTP)
-                ["9090", "9090", "tcp"],     # rosbridge WebSocket
+                ["9001", "9001", "tcp"],     # rosbridge WebSocket
             ],
             "volumes": [
                 # Keep var/lib/docker as bind mount for Docker daemon data
