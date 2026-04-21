@@ -125,8 +125,9 @@ def get_os_family() -> str:
 def resolve_os_family(os_family: str = "", browser: bool = False) -> str:
     """Resolve and validate the target OS family string.
 
-    When *os_family* is empty the value is auto-detected via :func:`get_os_family`
-    and an ``"-arm64"`` suffix is appended when running on ARM hardware.
+    The resolved OS family is based on :func:`get_os_family` when *os_family*
+    is empty, and an ``"-arm64"`` suffix is appended when running on ARM
+    hardware.
 
     Args:
         os_family: Explicit OS family override (e.g. ``"linux"``, ``"macos"``,
@@ -141,6 +142,8 @@ def resolve_os_family(os_family: str = "", browser: bool = False) -> str:
         UserError: If *os_family* and *browser* are both specified, or if
             *os_family* is not in :data:`SUPPORTED_OS_FAMILIES`.
     """
+    machine = platform.machine()
+    lowercase_machine = machine.lower()
     if os_family:
         if browser:
             raise UserError("You cannot use -os/--os-family and --browser together.")
@@ -149,10 +152,11 @@ def resolve_os_family(os_family: str = "", browser: bool = False) -> str:
                 f"Unsupported os-family '{os_family}'. "
                 f"Supported values are: {', '.join(SUPPORTED_OS_FAMILIES)}."
             )
+        if lowercase_machine in ("aarch64", "arm64"):
+            os_family += "-arm64"
         return os_family
     os_family = get_os_family()
-    machine = platform.machine()
-    if machine.lower() in ("aarch64", "arm64"):
+    if lowercase_machine in ("aarch64", "arm64"):
         os_family += "-arm64"
     return os_family
 
@@ -256,11 +260,11 @@ def get_path_to_binary(version: str, os_family: str = ""):
     app_dir = get_path_to_install(version, os_family)
     if app_dir is None:
         return None
-    if os_family == "macos":
+    if os_family == "macos" or os_family == "macos-arm64":
         return os.path.join(app_dir, "Duckietown Viewer.app")
-    if os_family == "linux":
+    if os_family == "linux" or os_family == "linux-arm64":
         ext = "AppImage"
-    elif os_family == "windows":
+    elif os_family == "windows" or os_family == "windows-arm64":
         ext = "exe"
     else:
         raise ValueError(f"Unknown platform '{os_family}'")
@@ -378,7 +382,7 @@ def ensure_duckietown_viewer_installed(os_family: str = "", log_prefix: str = ""
     dtslogger.info(f"{log_prefix}Installing...")
     subprocess.check_call(["unzip", f"v{latest}.zip"], cwd=app_dir)
     # On macOS, extract the .app from the DMG
-    if os_family == "macos":
+    if os_family == "macos" or os_family == "macos-arm64":
         dmg_pattern = os.path.join(app_dir, "*.dmg")
         dmg_files = glob.glob(dmg_pattern)
         if dmg_files:
@@ -420,7 +424,7 @@ def ensure_duckietown_viewer_installed(os_family: str = "", log_prefix: str = ""
                     )
                 # Remove the DMG file
                 os.remove(dmg_file)
-    if os_family == "windows":
+    if os_family == "windows" or os_family == "windows-arm64":
         # ensure the installer is executable (needed in WSL)
         installer = get_path_to_binary(latest, os_family)
         if installer and os.path.exists(installer):
@@ -716,7 +720,7 @@ class DuckietownViewerInstance:
         if enable_hardware_acceleration:
             app_config.append("--enable-hardware-acceleration")
         os_family = self._os_family
-        if os_family == "windows":
+        if os_family == "windows" or os_family == "windows-arm64":
             app_bin = get_installed_windows_app_path()
         else:
             app_bin = get_path_to_binary(get_most_recent_version_installed(os_family), os_family)
@@ -726,7 +730,7 @@ class DuckietownViewerInstance:
         # run the app
         dtslogger.info("Launching viewer...")
         # On macOS, use 'open' command for .app bundles
-        if os_family == "macos" and app_bin.endswith(".app"):
+        if (os_family == "macos" or os_family == "macos-arm64") and app_bin.endswith(".app"):
             # -W flag makes open wait until the application exits
             app_cmd = ["open", "-W", app_bin, "--args"] + app_config
         else:
