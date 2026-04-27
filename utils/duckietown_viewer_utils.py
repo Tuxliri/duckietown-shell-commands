@@ -3,6 +3,7 @@ import json
 import os
 import platform
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -494,6 +495,7 @@ class DuckietownViewerInstance:
 
     _BACKEND_DOCKER_IMAGE = "{registry}/duckietown/dt-duckietown-viewer:{distro}"
     _BACKEND_REMOTE_PORT = 8000
+    _BACKEND_PORT_ENV = "DT_VIEWER_BACKEND_PORT"
     _KNOWN_APPS = [
         "image_viewer",
         "keyboard_controller",
@@ -518,6 +520,25 @@ class DuckietownViewerInstance:
         self._backend: Optional[Container] = None
         self._frontend: Optional[subprocess.Popen] = None
         self._backend_url: Optional[str] = None
+        self._host_port: Optional[str] = None
+
+    @staticmethod
+    def _find_free_host_port() -> str:
+        """Find an available TCP port on localhost."""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.bind(("127.0.0.1", 0))
+            address = sock.getsockname()
+            port = address[1]
+        finally:
+            sock.close()
+        return str(port)
+
+    @staticmethod
+    def _use_host_network_for_backend() -> bool:
+        """Return whether the viewer backend should share the host network."""
+        system_name = platform.system()
+        return system_name == "Darwin"
 
     def start(self, app: str, robot: Optional[str], fullscreen: Optional[bool], menu: Optional[bool], on_top: Optional[bool], enable_hardware_acceleration: Optional[bool], browser: bool = False, window_args: Optional[WindowArgs] = None):
         """Start the viewer backend (if needed) and then the frontend, blocking until exit.
@@ -595,17 +616,29 @@ class DuckietownViewerInstance:
         dtslogger.debug(f"Using image '{image}'")
         # create container
         container_name: str = f"duckietown-viewer-backend-{random_string()}"
+        backend_port = str(self._BACKEND_REMOTE_PORT)
+        self._host_port = None
+        network_cfg: dict = {
+            "publish": [(0, self._BACKEND_REMOTE_PORT)],
+        }
+        if self._use_host_network_for_backend():
+            backend_port = self._find_free_host_port()
+            self._host_port = backend_port
+            network_cfg = {
+                "x_passthrough_args": ["--net=host"],
+            }
         container_cfg: dict = {
             "name": container_name,
             "detach": True,
-            "publish": [(0, self._BACKEND_REMOTE_PORT)],
             "volumes": [],
             "remove": True,
             "envs": {
                 "DT_LAUNCHER": app,
                 "VEHICLE_IP": ip,
                 "VEHICLE_NAME": robot,
-            }
+                self._BACKEND_PORT_ENV: backend_port,
+            },
+            **network_cfg,
         }
         # mount avahi socket (if it is available)
         if os.path.exists(AVAHI_SOCKET):
@@ -657,8 +690,9 @@ class DuckietownViewerInstance:
         dtslogger.debug(f"Waiting for container '{container_name}' to be ready...")
 
         # retrieve container's published port on the host
-        container.reload()
-        self._host_port: str = container.network_settings.ports[f"{self._BACKEND_REMOTE_PORT}/tcp"][0]["HostPort"]
+        if self._host_port is None:
+            container.reload()
+            self._host_port: str = container.network_settings.ports[f"{self._BACKEND_REMOTE_PORT}/tcp"][0]["HostPort"]
         
         # use localhost with the published host port (more reliable across Docker versions)
         backend_url = f"localhost:{self._host_port}"
