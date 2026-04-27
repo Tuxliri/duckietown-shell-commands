@@ -58,6 +58,12 @@ class DTCommandConfiguration(DTCommandConfigurationAbs):
             help="Run in browser mode"
         )
         parser.add_argument(
+            "--no-pull",
+            default=False,
+            action="store_true",
+            help="Do not attempt to update the backend container image"
+        )
+        parser.add_argument(
             "-os",
             "--os-family",
             default="",

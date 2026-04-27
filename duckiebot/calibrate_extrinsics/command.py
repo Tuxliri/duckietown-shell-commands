@@ -29,6 +29,7 @@ class DTCommand(DTCommandAbs):
             on_top=parsed.on_top,
             enable_hardware_acceleration=parsed.enable_hardware_acceleration,
             browser=browser,
+            no_pull=parsed.no_pull,
             window_args={
                 "icon": get_asset_icon_path(ICON_ASSET),
                 "min-height": 600,

@@ -15,12 +15,12 @@ import requests
 import webbrowser
 from dockertown import Container
 from dockertown import DockerClient
-from dockertown.exceptions import NoSuchContainer
+from dockertown.exceptions import NoSuchContainer, NoSuchImage
 from dt_data_api import DataClient
 
 import dt_shell
 from dt_shell import dtslogger, DTShell, UserError
-from utils.docker_utils import get_client, get_registry_to_use, pull_image
+from utils.docker_utils import get_client, get_endpoint_architecture, get_registry_to_use, pull_image
 from utils.duckietown_utils import USER_DATA_DIR, get_distro
 from utils.misc_utils import versiontuple, random_string
 from utils.networking_utils import get_duckiebot_ip
@@ -443,8 +443,20 @@ def ensure_duckietown_viewer_installed(os_family: str = "", log_prefix: str = ""
     dtslogger.info(f"{log_prefix}Installation completed successfully!")
 
 
-def launch_viewer(app: str, *, os_family: str = "", robot: Optional[str] = None, verbose: bool = False, fullscreen: bool = False, menu: bool = False, on_top: bool = False, enable_hardware_acceleration: bool = False, browser: bool = False, window_args: Optional[WindowArgs] = None) \
-        -> 'DuckietownViewerInstance':
+def launch_viewer(
+    app: str,
+    *,
+    os_family: str = "",
+    robot: Optional[str] = None,
+    verbose: bool = False,
+    fullscreen: bool = False,
+    menu: bool = False,
+    on_top: bool = False,
+    enable_hardware_acceleration: bool = False,
+    browser: bool = False,
+    no_pull: bool = False,
+    window_args: Optional[WindowArgs] = None
+) -> 'DuckietownViewerInstance':
     """Create and start a :class:`DuckietownViewerInstance`.
 
     This is a convenience wrapper that instantiates the viewer, calls
@@ -464,6 +476,7 @@ def launch_viewer(app: str, *, os_family: str = "", robot: Optional[str] = None,
             viewer.
         browser: Open the viewer URL in the system browser instead of the
             native app window.
+        no_pull: Use a local backend image without pulling updates.
         window_args: Extra keyword arguments forwarded to the frontend binary
             as ``--key=value`` CLI flags.  A ``"url"`` key bypasses the
             backend entirely.
@@ -472,7 +485,17 @@ def launch_viewer(app: str, *, os_family: str = "", robot: Optional[str] = None,
         The :class:`DuckietownViewerInstance` after it has finished running.
     """
     viewer = DuckietownViewerInstance(os_family, verbose)
-    viewer.start(app, robot, fullscreen, menu, on_top, enable_hardware_acceleration, browser, window_args=window_args)
+    viewer.start(
+        app=app,
+        robot=robot,
+        fullscreen=fullscreen,
+        menu=menu,
+        on_top=on_top,
+        enable_hardware_acceleration=enable_hardware_acceleration,
+        browser=browser,
+        no_pull=no_pull,
+        window_args=window_args,
+    )
     return viewer
 
 
@@ -519,7 +542,54 @@ class DuckietownViewerInstance:
         self._frontend: Optional[subprocess.Popen] = None
         self._backend_url: Optional[str] = None
 
-    def start(self, app: str, robot: Optional[str], fullscreen: Optional[bool], menu: Optional[bool], on_top: Optional[bool], enable_hardware_acceleration: Optional[bool], browser: bool = False, window_args: Optional[WindowArgs] = None):
+    @classmethod
+    def _local_arch_image(cls, image: str, docker: DockerClient) -> Optional[str]:
+        """Return the local architecture-specific image tag when it exists."""
+        try:
+            arch = get_endpoint_architecture()
+        except Exception:
+            dtslogger.debug("Could not determine Docker endpoint architecture.")
+            return None
+
+        local_image = f"{image}-{arch}"
+        try:
+            docker.image.inspect(local_image)
+        except NoSuchImage:
+            return None
+        return local_image
+
+    @classmethod
+    def _backend_image(cls, docker: DockerClient, no_pull: bool = False) -> str:
+        """Resolve the backend image, optionally using a local development build."""
+        image = cls._BACKEND_DOCKER_IMAGE.format(
+            registry=get_registry_to_use(),
+            distro=get_distro(dt_shell.shell).name
+        )
+        if no_pull:
+            local_image = cls._local_arch_image(image, docker)
+            if local_image is None:
+                raise UserError(
+                    f"No local viewer backend image found for '{image}'. "
+                    "Run 'dts devel build' in dt-duckietown-viewer or omit '--no-pull'."
+                )
+            return local_image
+
+        dtslogger.info("Checking for updates...")
+        pull_image(image, docker)
+        return image
+
+    def start(
+        self,
+        app: str,
+        robot: Optional[str],
+        fullscreen: Optional[bool],
+        menu: Optional[bool],
+        on_top: Optional[bool],
+        enable_hardware_acceleration: Optional[bool],
+        browser: bool = False,
+        no_pull: bool = False,
+        window_args: Optional[WindowArgs] = None
+    ):
         """Start the viewer backend (if needed) and then the frontend, blocking until exit.
 
         If *window_args* contains a ``"url"`` key the backend is skipped and
@@ -535,10 +605,11 @@ class DuckietownViewerInstance:
             enable_hardware_acceleration: Pass ``--enable-hardware-acceleration``
                 to the frontend.
             browser: Open in the system browser instead of the native app.
+            no_pull: Use a local backend image without pulling updates.
             window_args: Additional ``--key=value`` arguments for the frontend.
         """
         if "url" not in window_args.keys():
-            self._start_backend(app, robot)
+            self._start_backend(app, robot, no_pull)
             if not self._wait_backend_ready():
                 self._backend.stop()
                 return
@@ -557,7 +628,7 @@ class DuckietownViewerInstance:
             self._join_frontend()
         self._stop()
 
-    def _start_backend(self, app: str, robot: str):
+    def _start_backend(self, app: str, robot: str, no_pull: bool = False):
         """Pull the backend Docker image and start a container for the given app.
 
         The container exposes the backend HTTP server on a random host port.
@@ -568,6 +639,7 @@ class DuckietownViewerInstance:
         Args:
             app: The viewer app identifier (must be in :attr:`_KNOWN_APPS`).
             robot: Hostname or IP of the robot to connect to.
+            no_pull: Use a local backend image without pulling updates.
 
         Raises:
             ValueError: If *app* is not in :attr:`_KNOWN_APPS`.
@@ -586,12 +658,7 @@ class DuckietownViewerInstance:
         # create docker client
         docker: DockerClient = get_client()
         # compile image name
-        image = self._BACKEND_DOCKER_IMAGE.format(
-            registry=get_registry_to_use(),
-            distro=get_distro(dt_shell.shell).name
-        )
-        dtslogger.info(f"Checking for updates...")
-        pull_image(image, docker)
+        image = self._backend_image(docker, no_pull)
         dtslogger.debug(f"Using image '{image}'")
         # create container
         container_name: str = f"duckietown-viewer-backend-{random_string()}"
