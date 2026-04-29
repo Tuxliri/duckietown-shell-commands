@@ -25,10 +25,10 @@ class DTCommand(DTCommandAbs):
         parser = argparse.ArgumentParser(prog=prog)
         # define arguments
         parser.add_argument(
-            "--pull",
+            "--no-pull",
             action='store_true',
             default=False,
-            help="Update the runtime image"
+            help="Do not update the runtime image"
         )
         parser.add_argument(
             "-t",
@@ -65,9 +65,8 @@ class DTCommand(DTCommandAbs):
             pass
         # launch robot
         runtime_image = VIRTUAL_ROBOT_RUNTIME_IMAGE.format(distro=parsed.tag, arch=get_endpoint_architecture())
-        if parsed.pull:
+        if not parsed.no_pull:
             dtslogger.info("Downloading virtual robot runtime...")
-            # pull dind image
             pull_docker_image(local_docker, runtime_image)
         # create named volumes for each directory
         volumes = []
