@@ -1,8 +1,10 @@
 import json
 import os
+import plistlib
 import time
 from collections import Counter
 from pathlib import Path
+from plistlib import InvalidFileException
 
 import subprocess
 import platform
@@ -10,6 +12,7 @@ import socket
 import webbrowser
 from socket import AF_INET, SOCK_STREAM
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+from subprocess import TimeoutExpired
 from threading import Thread
 from typing import Optional, Callable
 
@@ -111,9 +114,9 @@ class DTCommand(DTCommandAbs):
                 return
             # app configuration
             app_path = get_path_to_app(os_family, version, browser)
-            # Unity on Windows/WSL uses "-" to mean "log to stdout"; "/dev/stdout" only exists on Unix-like OSes.
+            # Unity on macOS/Windows uses "-" to mean "log to stdout"; "/dev/stdout" works on Linux.
             app_config = [
-                "-logfile", "-" if os_family == "windows" else "/dev/stdout"
+                "-logfile", "/dev/stdout" if os_family == "linux" else "-"
             ]
             # graphics API
             if parsed.force_opengl:
@@ -246,7 +249,15 @@ class DTCommand(DTCommandAbs):
                 else:
                     # run the app
                     dtslogger.info("Launching Renderer...")
-                    app_path_list = ["open", app_path, "--args"] if os_family == "macos" else [app_path]
+                    if os_family == "macos":
+                        try:
+                            app_path_list = [get_macos_app_executable(app_path)]
+                        except FileNotFoundError as error:
+                            error_string = str(error)
+                            dtslogger.error(error_string)
+                            return
+                    else:
+                        app_path_list = [app_path]
                     app_cmd = app_path_list + app_config
                     dtslogger.debug(f"$ > {app_cmd}")
                     time.sleep(2)
@@ -293,6 +304,26 @@ def join_renderer(process: subprocess.Popen, verbose: bool = False):
         line = line.decode("utf-8")
         if EXTERNAL_SHUTDOWN_REQUEST in line:
             process.kill()
+            try:
+                process.wait(timeout=5)
+            except TimeoutExpired:
+                pass
             return
         if verbose:
             print(line, end="")
+
+
+def get_macos_app_executable(app_path: str) -> str:
+    app_bundle = Path(app_path)
+    info_plist = app_bundle / "Contents" / "Info.plist"
+    executable_name = app_bundle.stem
+    if info_plist.is_file():
+        try:
+            with info_plist.open("rb") as file:
+                executable_name = plistlib.load(file).get("CFBundleExecutable") or executable_name
+        except (OSError, InvalidFileException, ValueError):
+            pass
+    executable_path = app_bundle / "Contents" / "MacOS" / executable_name
+    if not executable_path.is_file():
+        raise FileNotFoundError(f"Could not find executable in macOS app bundle '{app_path}'.")
+    return str(executable_path)
