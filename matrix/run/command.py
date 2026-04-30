@@ -3,7 +3,6 @@ import os
 import time
 import shlex
 from collections import Counter
-from pathlib import Path
 
 import subprocess
 import platform
