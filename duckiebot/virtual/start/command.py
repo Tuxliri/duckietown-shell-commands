@@ -31,6 +31,13 @@ class DTCommand(DTCommandAbs):
             help="Do not update the runtime image"
         )
         parser.add_argument(
+            "--pull",
+            action='store_true',
+            default=False,
+            dest="deprecated_pull",
+            help=argparse.SUPPRESS
+        )
+        parser.add_argument(
             "-t",
             "--tag",
             type=str,
@@ -40,6 +47,10 @@ class DTCommand(DTCommandAbs):
         parser.add_argument("robot", nargs=1, help="Name of the Robot to start")
         # parse arguments
         parsed = parser.parse_args(args)
+        if parsed.deprecated_pull:
+            dtslogger.warning("The '--pull' option is deprecated and no longer needed; "
+                              "the runtime image is updated by default. "
+                              "Use '--no-pull' to skip the update.")
         # sanitize arguments
         parsed.robot = parsed.robot[0]
         # make sure the virtual robot exists
