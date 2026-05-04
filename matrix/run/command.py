@@ -116,9 +116,9 @@ class DTCommand(DTCommandAbs):
                 return
             # app configuration
             app_path = get_path_to_app(os_family, version, browser)
-            # Unity on Windows/WSL uses "-" to mean "log to stdout"; "/dev/stdout" only exists on Unix-like OSes.
+            # Unity on macOS/Windows uses "-" to mean "log to stdout"; "/dev/stdout" works on Linux.
             app_config = [
-                "-logfile", "-" if os_family == "windows" else "/dev/stdout"
+                "-logfile", "/dev/stdout" if os_family == "linux" else "-"
             ]
             # graphics API
             if parsed.force_opengl:
@@ -251,7 +251,7 @@ class DTCommand(DTCommandAbs):
                 else:
                     # run the app
                     dtslogger.info("Launching Renderer...")
-                    app_path_list = ["open", app_path, "--args"] if os_family == "macos" else [app_path]
+                    app_path_list = ["open", "-n", "-W", app_path, "--args"] if os_family == "macos" else [app_path]
                     app_cmd = app_path_list + app_config
                     if parsed.xvfb:
                         if os_family != "linux":
