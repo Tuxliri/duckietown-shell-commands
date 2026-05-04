@@ -62,7 +62,7 @@ class DTCommand(DTCommandAbs):
         )
         parser.add_argument(
             "--bind",
-            default="127.0.0.1",
+            default="0.0.0.0",
             type=str,
             help="Address to bind to",
         )
