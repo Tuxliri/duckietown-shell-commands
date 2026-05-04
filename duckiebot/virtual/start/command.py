@@ -25,10 +25,17 @@ class DTCommand(DTCommandAbs):
         parser = argparse.ArgumentParser(prog=prog)
         # define arguments
         parser.add_argument(
+            "--no-pull",
+            action='store_true',
+            default=False,
+            help="Do not update the runtime image"
+        )
+        parser.add_argument(
             "--pull",
             action='store_true',
             default=False,
-            help="Update the runtime image"
+            dest="deprecated_pull",
+            help=argparse.SUPPRESS
         )
         parser.add_argument(
             "-t",
@@ -40,6 +47,10 @@ class DTCommand(DTCommandAbs):
         parser.add_argument("robot", nargs=1, help="Name of the Robot to start")
         # parse arguments
         parsed = parser.parse_args(args)
+        if parsed.deprecated_pull:
+            dtslogger.warning("The '--pull' option is deprecated and no longer needed; "
+                              "the runtime image is updated by default. "
+                              "Use '--no-pull' to skip the update.")
         # sanitize arguments
         parsed.robot = parsed.robot[0]
         # make sure the virtual robot exists
@@ -65,9 +76,8 @@ class DTCommand(DTCommandAbs):
             pass
         # launch robot
         runtime_image = VIRTUAL_ROBOT_RUNTIME_IMAGE.format(distro=parsed.tag, arch=get_endpoint_architecture())
-        if parsed.pull:
+        if not parsed.no_pull:
             dtslogger.info("Downloading virtual robot runtime...")
-            # pull dind image
             pull_docker_image(local_docker, runtime_image)
         # create named volumes for each directory
         volumes = []
