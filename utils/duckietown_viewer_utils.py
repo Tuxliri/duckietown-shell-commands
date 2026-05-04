@@ -795,7 +795,7 @@ class DuckietownViewerInstance:
         Builds the CLI argument list from the supplied options, resolves the
         platform-specific binary path, and spawns the process with
         :class:`subprocess.Popen`.  On macOS ``.app`` bundles are launched via
-        ``open -W``.
+        ``open -n -W``.
 
         Args:
             fullscreen: Pass ``--fullscreen`` to the binary.
@@ -832,8 +832,8 @@ class DuckietownViewerInstance:
         dtslogger.info("Launching viewer...")
         # On macOS, use 'open' command for .app bundles
         if (os_family == "macos" or os_family == "macos-arm64") and app_bin.endswith(".app"):
-            # -W flag makes open wait until the application exits
-            app_cmd = ["open", "-W", app_bin, "--args"] + app_config
+            # -n starts a separate app instance; -W waits until that instance exits.
+            app_cmd = ["open", "-n", "-W", app_bin, "--args"] + app_config
         else:
             app_cmd = [app_bin] + app_config
         dtslogger.debug(f"$ > {app_cmd}")
