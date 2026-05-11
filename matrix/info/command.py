@@ -26,7 +26,7 @@ class DTCommand(DTCommandAbs):
                 f"No versions found installed.")
             return
         # ---
-        install_dir = get_path_to_install(version)
+        install_dir = get_path_to_install(os_family, version)
         capitalized_app_name = APP_NAME.capitalize()
         meta_fp = os.path.join(install_dir, f"{capitalized_app_name}.json")
         with open(meta_fp, 'rt') as fin:
