@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 import shlex
 from collections import Counter
@@ -7,6 +8,7 @@ from collections import Counter
 import subprocess
 import platform
 import socket
+import sys
 import webbrowser
 from socket import AF_INET, SOCK_STREAM
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -25,6 +27,55 @@ from utils.duckiematrix_utils import \
     get_os_family
 
 EXTERNAL_SHUTDOWN_REQUEST: str = "===REQUESTED-EXTERNAL-SHUTDOWN==="
+
+
+def _mask_token_value(token: str) -> str:
+    parts = token.split("-", maxsplit=2)
+    if len(parts) == 3:
+        return f"{parts[0]}-{parts[1]}-{'*' * len(parts[2])}"
+    if len(parts) == 2:
+        return f"{parts[0]}-{'*' * len(parts[1])}"
+    return "*" * len(token)
+
+
+def _supports_terminal_hyperlinks() -> bool:
+    if not sys.stdout.isatty():
+        return False
+    if os.environ.get("TERM_PROGRAM") in {"vscode", "iTerm.app", "WezTerm"}:
+        return True
+    if os.environ.get("WT_SESSION") or os.environ.get("KONSOLE_VERSION"):
+        return True
+    vte_version = os.environ.get("VTE_VERSION")
+    return vte_version is not None and vte_version.isdigit() and int(vte_version) >= 5000
+
+
+def _mask_token_in_text(text: str) -> str:
+    def replace(match: re.Match[str]) -> str:
+        token = match.group("token")
+        suffix = "/" if token.endswith("/") else ""
+        token = token[:-1] if suffix else token
+        return f"token={_mask_token_value(token)}{suffix}"
+
+    return re.sub(r"token=(?P<token>[^&\s\"]+)", replace, text)
+
+
+def _format_navigation_url(url: str, token: str) -> str:
+    display_url = _mask_token_in_text(url)
+    if not _supports_terminal_hyperlinks():
+        return display_url
+    escape = "\033"
+    return f"{escape}]8;;{url}{escape}\\{display_url}{escape}]8;;{escape}\\"
+
+
+class RedactingSimpleHTTPRequestHandler(SimpleHTTPRequestHandler):
+
+    def log_message(self, format: str, *args) -> None:
+        sanitized_args = tuple(
+            _mask_token_in_text(arg) if isinstance(arg, str) else arg
+            for arg in args
+        )
+        super_ = super()
+        super_.log_message(format, *sanitized_args)
 
 
 class DTCommand(DTCommandAbs):
@@ -206,7 +257,7 @@ class DTCommand(DTCommandAbs):
                             socket_.listen(1)
                             sock_name = socket_.getsockname()
                             port = sock_name[1]
-                    server = HTTPServer((host, port), SimpleHTTPRequestHandler)
+                    server = HTTPServer((host, port), RedactingSimpleHTTPRequestHandler)
                     server_thread = Thread(target=server.serve_forever)
                     server_thread.daemon = True
                     url = f"http://{host}:{port}/?"
@@ -224,7 +275,8 @@ class DTCommand(DTCommandAbs):
                         url += f"engine-ws-control-port={_ewp}&"
                     url += f"profiler={'true' if parsed.profiler else 'false'}&"
                     url += f"tutorial={'true' if not parsed.no_tutorial else 'false'}&"
-                    url += f"token={shell.profile.secrets.dt_token}/"
+                    token = shell.profile.secrets.dt_token
+                    url += f"token={token}/"
                     server_thread.start()
                     browser_opened = False
                     if os_family == "windows":
@@ -242,7 +294,8 @@ class DTCommand(DTCommandAbs):
                         browser_opened = webbrowser.open(url)
                     if not browser_opened:
                         dtslogger.warning("Could not open browser.")
-                    dtslogger.info(f"Navigate to {url}.")
+                    formatted_url = _format_navigation_url(url, token)
+                    dtslogger.info(f"Navigate to {formatted_url}.")
                     # wait for the engine to terminate
                     if run_engine:
                         engine.join()
