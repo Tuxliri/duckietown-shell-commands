@@ -119,12 +119,14 @@ class DTCommand(DTCommandAbs):
                         dtslogger.error(msg)
                         continue
             # Reconcile compose project labels. Containers declared with
-            # `container_name:` are global by name; if one exists labeled with a
-            # different compose project than the one we're about to use, docker
-            # compose refuses to (re)create it ("container name already in use").
-            # This happens on fresh Raspberry Pi flashes where the SD-card boot
-            # script `dt-run-basics-stacks` brings up robot/basics with project
-            # `basics` while stack/up falls back to the compose-file parent dir.
+            # `container_name:` are global by name; if one exists under a
+            # different compose project (or no project at all, e.g. a stale
+            # `docker run` leftover), docker compose refuses to (re)create it
+            # ("container name already in use"). Happens on fresh Raspberry Pi
+            # flashes where `dt-run-basics-stacks` brings up robot/basics with
+            # project `basics` while stack/up falls back to the compose-file
+            # parent dir, and on robots carrying orphan containers from prior
+            # ad-hoc runs.
             target_project = stack_content.get("name") or os.path.basename(
                 os.path.dirname(stack_file)
             )
@@ -144,13 +146,16 @@ class DTCommand(DTCommandAbs):
                         existing_project = ctr.labels.get(
                             "com.docker.compose.project", ""
                         )
-                        if not existing_project or existing_project == target_project:
+                        if existing_project == target_project:
                             continue
+                        reason = (
+                            f"compose project '{existing_project}' != '{target_project}'"
+                            if existing_project
+                            else f"orphan (no compose project label) blocking '{target_project}'"
+                        )
                         dtslogger.info(
-                            f"Removing legacy container '{cname}' "
-                            f"(compose project '{existing_project}' != "
-                            f"'{target_project}') to let stack "
-                            f"[{target_project}]({stack_name}) recreate it."
+                            f"Removing legacy container '{cname}' ({reason}) "
+                            f"to let stack [{target_project}]({stack_name}) recreate it."
                         )
                         try:
                             if ctr.status == "running":
